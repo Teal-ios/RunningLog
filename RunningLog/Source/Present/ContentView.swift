@@ -14,8 +14,16 @@ struct ContentView: View {
                 .imageScale(.large)
                 .foregroundStyle(.tint)
             Text("Hello, world!")
+                .font(.nanumLight16)
         }
         .padding()
+        .onAppear() {
+            for fontFamily in UIFont.familyNames {
+                for fontName in UIFont.fontNames(forFamilyName: fontFamily) {
+                    print(fontName)
+                }
+            }
+        }
     }
 }
 

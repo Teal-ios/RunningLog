@@ -7,9 +7,11 @@
 
 import SwiftUI
 import ComposableArchitecture
+import CoreLocation
 // MARK: - Views
 struct WeatherView: View {
     let store: StoreOf<WeatherFeature>
+    @StateObject private var locationManager = LocationManager()
     
     var body: some View {
         WithPerceptionTracking {
@@ -36,9 +38,17 @@ struct WeatherView: View {
             }
             .background(Color(UIColor.systemGroupedBackground))
             .onAppear {
+                locationManager.requestLocation()
+                locationManager.onUpdate = { location, address in
+                    store.send(.updateLocation(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, address: address))
+                }
+                locationManager.onError = { errorMsg in
+                    store.send(.locationError(errorMsg))
+                }
                 store.send(.onAppear)
             }
             .refreshable {
+                locationManager.requestLocation()
                 store.send(.refreshWeather)
             }
         }
@@ -315,5 +325,45 @@ struct WeatherView: View {
         case "cloudy": return .gray
         default: return .orange
         }
+    }
+}
+
+class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    private let manager = CLLocationManager()
+    @Published var lastLocation: CLLocation?
+    @Published var address: String = ""
+    var onUpdate: ((CLLocation, String) -> Void)?
+    var onError: ((String) -> Void)?
+    
+    override init() {
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+    }
+    
+    func requestLocation() {
+        manager.requestWhenInUseAuthorization()
+        manager.requestLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        self.lastLocation = location
+        // 주소 변환
+        let geocoder = CLGeocoder()
+        geocoder.reverseGeocodeLocation(location) { placemarks, error in
+            if let error = error {
+                self.onError?(error.localizedDescription)
+                return
+            }
+            let placemark = placemarks?.first
+            let address = [placemark?.locality, placemark?.subLocality, placemark?.thoroughfare].compactMap { $0 }.joined(separator: " ")
+            self.address = address
+            self.onUpdate?(location, address)
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        self.onError?(error.localizedDescription)
     }
 }

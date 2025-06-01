@@ -10,5 +10,9 @@
 		<string>NanumSquareNeoOTF-Lt.otf</string>
 		<string>NanumSquareNeoOTF-Rg.otf</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>이 앱은 현재 위치 기반으로 대기질 정보를 제공합니다.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>이 앱은 현재 위치 기반으로 대기질 정보를 제공합니다.</string>
 </dict>
 </plist>

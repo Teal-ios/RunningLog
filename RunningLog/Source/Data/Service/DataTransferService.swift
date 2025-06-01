@@ -19,11 +19,12 @@ final class DataTransferService {
             let responseData = try await networkService.request(target: target)
             print(responseData)
             let decodedData = try JSONDecoder().decode(T.self, from: responseData)
+            print(decodedData)
             return decodedData
         } catch {
             print("❌ Error From: \(target.request)")
             print(error)
-            throw DenError.decodingError(error: error)
+            throw RLError.decodingError(error: error)
         }
     }
 }

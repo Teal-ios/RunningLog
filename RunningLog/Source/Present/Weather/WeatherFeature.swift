@@ -7,76 +7,10 @@
 
 import Foundation
 import ComposableArchitecture
-
-// MARK: - Models
-struct WeatherData: Codable, Equatable {
-    let temperature: Double
-    let humidity: Int
-    let windSpeed: Double
-    let weatherCondition: String
-    let pm10: Int
-    let pm25: Int
-    let hourlyForecast: [HourlyWeather]
-    let location: String
-}
-
-struct HourlyWeather: Codable, Equatable, Identifiable {
-    let id = UUID()
-    let time: String
-    let temperature: Double
-    let humidity: Int
-    let windSpeed: Double
-    let condition: String
-    
-    private enum CodingKeys: String, CodingKey {
-        case time, temperature, humidity, windSpeed, condition
-    }
-}
+import CoreLocation
 
 // MARK: - API Client
-struct WeatherClient {
-    var fetchWeather: @Sendable (String) async throws -> WeatherData
-    
-    static let live = WeatherClient(
-        fetchWeather: { location in
-            // 실제 API 호출 대신 Mock 데이터 반환
-            try await Task.sleep(nanoseconds: 1_000_000_000) // 1초 지연
-            
-            return WeatherData(
-                temperature: 26,
-                humidity: 50,
-                windSpeed: 5.7,
-                weatherCondition: "맑음",
-                pm10: 33,
-                pm25: 82,
-                hourlyForecast: [
-                    HourlyWeather(time: "18:00", temperature: 25, humidity: 48, windSpeed: 4, condition: "rainy"),
-                    HourlyWeather(time: "21:00", temperature: 23, humidity: 46, windSpeed: 1, condition: "rainy"),
-                    HourlyWeather(time: "0:00", temperature: 19, humidity: 51, windSpeed: 1, condition: "clear"),
-                    HourlyWeather(time: "3:00", temperature: 17, humidity: 64, windSpeed: 1, condition: "clear"),
-                    HourlyWeather(time: "6:00", temperature: 16, humidity: 70, windSpeed: 1, condition: "sunny")
-                ],
-                location: "구로구 서울"
-            )
-        }
-    )
-    
-    static let mock = WeatherClient(
-        fetchWeather: { _ in
-            WeatherData(
-                temperature: 26,
-                humidity: 50,
-                windSpeed: 5.7,
-                weatherCondition: "맑음",
-                pm10: 33,
-                pm25: 82,
-                hourlyForecast: [],
-                location: "구로구 서울"
-            )
-        }
-    )
-}
-
+// (WeatherClient 정의 삭제)
 
 @Reducer
 struct WeatherFeature {
@@ -85,13 +19,17 @@ struct WeatherFeature {
         var weatherData: WeatherData?
         var isLoading = false
         var errorMessage: String?
-        var location = "구로구 서울"
+        var location: String = "구로구 서울"
+        var latitude: Double? = nil
+        var longitude: Double? = nil
     }
     
     enum Action {
         case onAppear
         case refreshWeather
         case weatherResponse(Result<WeatherData, Error>)
+        case updateLocation(latitude: Double, longitude: Double, address: String)
+        case locationError(String)
     }
     
     @Dependency(\.weatherClient) var weatherClient
@@ -102,22 +40,39 @@ struct WeatherFeature {
             case .onAppear, .refreshWeather:
                 state.isLoading = true
                 state.errorMessage = nil
-                
-                return .run { [location = state.location] send in
+                // 위치 정보가 있으면 fetchWeather, 없으면 위치 요청
+                if let lat = state.latitude, let lon = state.longitude {
+                    return .run { send in
+                        await send(.weatherResponse(
+                            Result { try await weatherClient.fetchWeather(lat, lon) }
+                        ))
+                    }
+                } else {
+                    // 위치 요청은 View에서 처리 (권한 등)
+                    return .none
+                }
+            case let .updateLocation(latitude, longitude, address):
+                state.latitude = latitude
+                state.longitude = longitude
+                state.location = address
+                // 위치가 갱신되면 바로 날씨 요청
+                return .run { send in
                     await send(.weatherResponse(
-                        Result { try await weatherClient.fetchWeather(location) }
+                        Result { try await weatherClient.fetchWeather(latitude, longitude) }
                     ))
                 }
-                
             case let .weatherResponse(.success(weatherData)):
                 state.isLoading = false
                 state.weatherData = weatherData
                 state.errorMessage = nil
                 return .none
-                
             case let .weatherResponse(.failure(error)):
                 state.isLoading = false
                 state.errorMessage = error.localizedDescription
+                return .none
+            case let .locationError(errorMsg):
+                state.isLoading = false
+                state.errorMessage = errorMsg
                 return .none
             }
         }

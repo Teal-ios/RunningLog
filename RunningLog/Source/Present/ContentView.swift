@@ -6,29 +6,15 @@
 //
 
 import SwiftUI
+import ComposableArchitecture
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Rectangle()
-                .fill(RLColor.primary)
-            Rectangle()
-                .fill(RLColor.secondary)
-            Rectangle()
-                .fill(RLColor.accent)
-            Rectangle()
-                .fill(RLColor.white)
-            Text("Hello, world!")
-                .font(.nanumLight16)
-        }
-        .padding()
-        .onAppear() {
-            for fontFamily in UIFont.familyNames {
-                for fontName in UIFont.fontNames(forFamilyName: fontFamily) {
-                    print(fontName)
-                }
+        MainTabView(
+            store: Store(initialState: MainTabFeature.State()) {
+                MainTabFeature()
             }
-        }
+        )
     }
 }
 

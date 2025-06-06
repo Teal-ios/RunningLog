@@ -9,9 +9,6 @@ import Foundation
 import ComposableArchitecture
 import CoreLocation
 
-// MARK: - API Client
-// (WeatherClient 정의 삭제)
-
 @Reducer
 struct WeatherFeature {
     @ObservableState

@@ -12,11 +12,14 @@ import ComposableArchitecture
 struct RunningLogApp: App {
     var body: some Scene {
         WindowGroup {
-            WeatherView(
-                 store: Store(initialState: WeatherFeature.State()) {
-                     WeatherFeature()
-                 }
-             )
+//            WeatherView(
+//                 store: Store(initialState: WeatherFeature.State()) {
+//                     WeatherFeature()
+//                 }
+//             )
+            MainTabView(store: Store(initialState: MainTabFeature.State(), reducer: {
+                MainTabFeature()
+            }))
         }
     }
 }

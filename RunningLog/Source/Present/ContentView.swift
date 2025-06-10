@@ -13,7 +13,7 @@ struct ContentView: View {
         MainTabView(
             store: Store(initialState: MainTabFeature.State()) {
                 MainTabFeature()
-            }
+                }
         )
     }
 }

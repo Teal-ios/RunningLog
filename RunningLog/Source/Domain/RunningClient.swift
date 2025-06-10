@@ -8,8 +8,29 @@
 import Foundation
 import CoreLocation
 import ComposableArchitecture
+import WidgetKit
+import UIKit
+import HealthKit
 
 // MARK: - Running Models
+struct UserProfile: Equatable {
+    var weight: Double = 70.0 // kg
+    var age: Int = 30
+    var height: Double = 170.0 // cm
+    var gender: Gender = .male
+    
+    enum Gender {
+        case male, female
+        
+        var calorieMultiplier: Double {
+            switch self {
+            case .male: return 1.0
+            case .female: return 0.9
+            }
+        }
+    }
+}
+
 struct RunningSession: Equatable {
     let id = UUID()
     var startTime: Date?
@@ -18,6 +39,7 @@ struct RunningSession: Equatable {
     var currentPace: Double = 0.0 // minutes per km
     var averagePace: Double = 0.0
     var heartRate: Int = 0 // bpm
+    var calories: Double = 0.0 // kcal
     var isActive: Bool = false
     var isPaused: Bool = false
     var elapsedTime: TimeInterval = 0
@@ -39,6 +61,34 @@ struct RunningSession: Equatable {
         let seconds = Int((currentPace - Double(minutes)) * 60)
         return String(format: "%d'%02d\"", minutes, seconds)
     }
+    
+    var formattedCalories: String {
+        return String(format: "%.0f", calories)
+    }
+    
+    // 칼로리 계산 (MET 기반)
+    mutating func calculateCalories(userProfile: UserProfile) {
+        guard elapsedTime > 0 else { return }
+        
+        // 평균 속도 계산 (km/h)
+        let distanceInKm = distance / 1000.0
+        let timeInHours = elapsedTime / 3600.0
+        let speedKmh = distanceInKm / timeInHours
+        
+        // MET 값 계산 (러닝 속도에 따른)
+        let met: Double
+        switch speedKmh {
+        case 0..<6: met = 6.0    // 걷기
+        case 6..<8: met = 8.3    // 조깅
+        case 8..<10: met = 11.0  // 러닝
+        case 10..<12: met = 11.5 // 빠른 러닝
+        case 12..<14: met = 12.8 // 매우 빠른 러닝
+        default: met = 15.0      // 스프린트
+        }
+        
+        // 칼로리 = MET × 체중(kg) × 시간(h) × 성별 보정
+        calories = met * userProfile.weight * timeInHours * userProfile.gender.calorieMultiplier
+    }
 }
 
 // MARK: - Running Client Protocol
@@ -50,6 +100,10 @@ protocol RunningClient {
     func updateLocation(_ location: CLLocation) async throws -> Void
     func updateHeartRate(_ heartRate: Int) async throws -> Void
     func getSession() async -> RunningSession?
+    func getUserProfile() async -> UserProfile
+    func updateUserProfile(_ profile: UserProfile) async throws -> Void
+    func enableBackgroundTracking() async throws -> Void
+    func disableBackgroundTracking() async throws -> Void
 }
 
 // MARK: - Running Client Implementation
@@ -65,8 +119,147 @@ extension RunningClient {
 
 class RunningClientImpl: RunningClient {
     private var session = RunningSession()
+    private var userProfile = UserProfile()
     private var locations: [CLLocation] = []
     private var lastLocation: CLLocation?
+    private var locationManager: CLLocationManager?
+    private let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
+    private let healthStore = HKHealthStore()
+    private var heartRateQuery: HKQuery?
+    private var isUsingRealHeartRate = false
+    
+    init() {
+        setupLocationManager()
+        setupHealthKit()
+    }
+    
+    private func setupLocationManager() {
+        locationManager = CLLocationManager()
+        locationManager?.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager?.distanceFilter = 5.0 // 5미터마다 업데이트
+    }
+    
+    private func setupHealthKit() {
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        
+        let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate)!
+        let readTypes: Set<HKObjectType> = [heartRateType]
+        
+        healthStore.requestAuthorization(toShare: nil, read: readTypes) { [weak self] success, error in
+            if success {
+                print("HealthKit 권한 승인됨")
+                self?.startHeartRateMonitoring()
+            } else {
+                print("HealthKit 권한 거부됨: \(error?.localizedDescription ?? "Unknown error")")
+            }
+        }
+    }
+    
+    private func startHeartRateMonitoring() {
+        func executeHeartRateQuery(startDate: Date) {
+            guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
+                print("HealthKit 심박수 타입을 가져올 수 없음")
+                DispatchQueue.main.async {
+                    self.isUsingRealHeartRate = false
+                    self.session.heartRate = 0
+                }
+                return
+            }
+            let predicate = HKQuery.predicateForSamples(
+                withStart: startDate,
+                end: nil,
+                options: .strictEndDate
+            )
+            let query = HKAnchoredObjectQuery(
+                type: heartRateType,
+                predicate: predicate,
+                anchor: nil,
+                limit: HKObjectQueryNoLimit
+            ) { [weak self] query, samples, deletedObjects, anchor, error in
+                guard let self = self else { return }
+                if let error = error {
+                    print("HealthKit 심박수 쿼리 에러: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self.isUsingRealHeartRate = false
+                        self.session.heartRate = 0
+                    }
+                    return
+                }
+                // 초기 샘플 처리
+                if let samples = samples as? [HKQuantitySample], !samples.isEmpty {
+                    if let latestSample = samples.last {
+                        let heartRate = Int(latestSample.quantity.doubleValue(for: HKUnit(from: "count/min")))
+                        DispatchQueue.main.async {
+                            self.isUsingRealHeartRate = true
+                            self.session.heartRate = heartRate
+                            print("💓 HealthKit 초기 심박수: \(heartRate) bpm")
+                        }
+                    }
+                } else {
+                    // 만약 최초 쿼리라면, 10분 전으로 한 번 더 재시도
+                    if startDate >= Date().addingTimeInterval(-5) {
+                        print("HealthKit 초기 심박수 데이터 없음, 10분 전까지 재시도")
+                        executeHeartRateQuery(startDate: Date().addingTimeInterval(-60*10))
+                        return
+                    }
+                    print("HealthKit 초기 심박수 데이터 없음 (10분 전까지도 없음)")
+                    DispatchQueue.main.async {
+                        self.isUsingRealHeartRate = false
+                        self.session.heartRate = 0
+                    }
+                }
+            }
+            // updateHandler를 직접 정의해서 할당
+            query.updateHandler = { [weak self] query, samples, deletedObjects, anchor, error in
+                guard let self = self else { return }
+                if let error = error {
+                    print("HealthKit 심박수 업데이트 에러: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self.isUsingRealHeartRate = false
+                        self.session.heartRate = 0
+                    }
+                    return
+                }
+                guard let samples = samples as? [HKQuantitySample], !samples.isEmpty else {
+                    DispatchQueue.main.async {
+                        self.isUsingRealHeartRate = false
+                        self.session.heartRate = 0
+                    }
+                    return
+                }
+                if let latestSample = samples.last {
+                    let heartRate = Int(latestSample.quantity.doubleValue(for: HKUnit(from: "count/min")))
+                    let sampleDate = latestSample.endDate
+                    if Date().timeIntervalSince(sampleDate) <= 300 {
+                        DispatchQueue.main.async {
+                            self.isUsingRealHeartRate = true
+                            self.session.heartRate = heartRate
+                            print("💓 HealthKit 실시간 심박수: \(heartRate) bpm (측정시간: \(sampleDate))")
+                        }
+                    } else {
+                        DispatchQueue.main.async {
+                            self.isUsingRealHeartRate = false
+                            self.session.heartRate = 0
+                        }
+                    }
+                }
+            }
+            self.heartRateQuery = query
+            self.healthStore.execute(query)
+            print("💓 HealthKit 실시간 심박수 모니터링 시작 (", startDate, ")")
+        }
+        executeHeartRateQuery(startDate: Date())
+    }
+    
+    private func updateWidgetData() {
+        sharedDefaults?.set(session.isActive && !session.isPaused, forKey: "isRunning")
+        sharedDefaults?.set(session.formattedDistance, forKey: "distance")
+        sharedDefaults?.set(session.formattedTime, forKey: "time")
+        sharedDefaults?.set(session.formattedCalories, forKey: "calories")
+        
+        // 위젯 타임라인 업데이트 요청
+        WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
+    }
     
     func startRunning() async throws -> Void {
         session.isActive = true
@@ -74,16 +267,44 @@ class RunningClientImpl: RunningClient {
         session.startTime = Date()
         session.elapsedTime = 0
         session.distance = 0
+        session.calories = 0
+        session.heartRate = 0
         locations.removeAll()
         lastLocation = nil
+        
+        // 심박수 플래그 초기화
+        isUsingRealHeartRate = false
+        
+        print("러닝 시작: \(Date())")
+        
+        // 위젯 데이터 업데이트
+        updateWidgetData()
+        
+        // 심박수 모니터링 시작
+        startHeartRateMonitoring()
+        
+        // 백그라운드 위치 추적 시작
+        try await enableBackgroundTracking()
     }
     
     func pauseRunning() async throws -> Void {
         session.isPaused = true
+        locationManager?.stopUpdatingLocation()
+        
+        print("러닝 일시정지")
+        
+        // 위젯 데이터 업데이트
+        updateWidgetData()
     }
     
     func resumeRunning() async throws -> Void {
         session.isPaused = false
+        locationManager?.startUpdatingLocation()
+        
+        print("러닝 재개")
+        
+        // 위젯 데이터 업데이트
+        updateWidgetData()
     }
     
     func stopRunning() async throws -> Void {
@@ -91,29 +312,57 @@ class RunningClientImpl: RunningClient {
         session.isPaused = false
         session.endTime = Date()
         
-        // Calculate average pace
+        print("러닝 종료: 거리 \(session.formattedDistance)km, 시간 \(session.formattedTime)")
+        
+        // Calculate final average pace and calories
         if session.distance > 0 && session.elapsedTime > 0 {
             let distanceInKm = session.distance / 1000.0
             let timeInMinutes = session.elapsedTime / 60.0
             session.averagePace = timeInMinutes / distanceInKm
         }
+        
+        // 최종 칼로리 계산
+        session.calculateCalories(userProfile: userProfile)
+        
+        // 위젯 데이터 업데이트
+        updateWidgetData()
+        
+        // 심박수 모니터링 중지
+        stopHeartRateMonitoring()
+        
+        // 백그라운드 추적 중지
+        try await disableBackgroundTracking()
     }
     
     func updateLocation(_ location: CLLocation) async throws -> Void {
         guard session.isActive && !session.isPaused else { return }
+        
+        print("위치 업데이트: \(location.coordinate.latitude), \(location.coordinate.longitude)")
         
         locations.append(location)
         
         // Calculate distance
         if let lastLoc = lastLocation {
             let distance = location.distance(from: lastLoc)
-            session.distance += distance
             
-            // Calculate current pace (simplified)
-            if session.elapsedTime > 0 {
-                let distanceInKm = session.distance / 1000.0
-                let timeInMinutes = session.elapsedTime / 60.0
-                session.currentPace = timeInMinutes / distanceInKm
+            // 너무 작은 거리는 무시 (GPS 오차 고려)
+            if distance > 2.0 {
+                session.distance += distance
+                print("거리 증가: +\(String(format: "%.2f", distance))m, 총 거리: \(session.formattedDistance)km")
+                
+                // Calculate current pace (simplified)
+                if session.elapsedTime > 0 {
+                    let distanceInKm = session.distance / 1000.0
+                    let timeInMinutes = session.elapsedTime / 60.0
+                    session.currentPace = timeInMinutes / distanceInKm
+                }
+                
+                // 실시간 칼로리 계산
+                session.calculateCalories(userProfile: userProfile)
+                print("칼로리 업데이트: \(session.formattedCalories)kcal")
+                
+                // 위젯 데이터 업데이트 (거리가 변경될 때마다)
+                updateWidgetData()
             }
         }
         
@@ -122,47 +371,204 @@ class RunningClientImpl: RunningClient {
     
     func updateHeartRate(_ heartRate: Int) async throws -> Void {
         session.heartRate = heartRate
+        print("심박수 수동 업데이트: \(heartRate) bpm")
     }
     
     func getSession() async -> RunningSession? {
+        // 러닝이 활성 상태이고 일시정지가 아닐 때 실시간으로 elapsedTime 계산
+        if session.isActive && !session.isPaused, let startTime = session.startTime {
+            session.elapsedTime = Date().timeIntervalSince(startTime)
+        }
         return session
+    }
+    
+    func getUserProfile() async -> UserProfile {
+        return userProfile
+    }
+    
+    func updateUserProfile(_ profile: UserProfile) async throws -> Void {
+        userProfile = profile
+        // 사용자 프로필이 변경되면 칼로리를 다시 계산
+        if session.isActive {
+            session.calculateCalories(userProfile: userProfile)
+        }
+    }
+    
+    func enableBackgroundTracking() async throws -> Void {
+        guard let locationManager = locationManager else { return }
+        
+        print("백그라운드 위치 추적 활성화")
+        
+        // 백그라운드 위치 권한 요청
+        locationManager.requestAlwaysAuthorization()
+        
+        // 백그라운드에서도 위치 업데이트 허용
+        locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.pausesLocationUpdatesAutomatically = false
+        
+        // 위치 업데이트 시작
+        locationManager.startUpdatingLocation()
+        
+        // 백그라운드 작업 시작
+        beginBackgroundTask()
+    }
+    
+    func disableBackgroundTracking() async throws -> Void {
+        guard let locationManager = locationManager else { return }
+        
+        print("백그라운드 위치 추적 비활성화")
+        
+        locationManager.stopUpdatingLocation()
+        locationManager.allowsBackgroundLocationUpdates = false
+        
+        endBackgroundTask()
+    }
+    
+    private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+    
+    private func beginBackgroundTask() {
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "RunningTracking") {
+            // 백그라운드 작업 시간이 만료되기 전에 정리
+            self.endBackgroundTask()
+        }
+    }
+    
+    private func endBackgroundTask() {
+        if backgroundTaskID != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTaskID)
+            backgroundTaskID = .invalid
+        }
+    }
+    
+    private func stopHeartRateMonitoring() {
+        if let query = heartRateQuery {
+            healthStore.stop(query)
+            heartRateQuery = nil
+        }
+        isUsingRealHeartRate = false
     }
 }
 
-struct MockRunningClient: RunningClient {
+class MockRunningClient: RunningClient {
+    private var session = RunningSession()
+    private var heartRateTimer: Timer?
+    
     func startRunning() async throws -> Void {
-        // Mock implementation
+        session.isActive = true
+        session.isPaused = false
+        session.startTime = Date()
+        session.elapsedTime = 0
+        session.distance = 0
+        session.calories = 0
+        session.heartRate = 0
+        
+        print("Mock 러닝 시작")
+        startMockHeartRateSimulation()
     }
     
     func pauseRunning() async throws -> Void {
-        // Mock implementation
+        session.isPaused = true
+        print("Mock 러닝 일시정지")
     }
     
     func resumeRunning() async throws -> Void {
-        // Mock implementation
+        session.isPaused = false
+        print("Mock 러닝 재개")
     }
     
     func stopRunning() async throws -> Void {
-        // Mock implementation
+        session.isActive = false
+        session.isPaused = false
+        session.endTime = Date()
+        heartRateTimer?.invalidate()
+        heartRateTimer = nil
+        print("Mock 러닝 종료")
     }
     
     func updateLocation(_ location: CLLocation) async throws -> Void {
-        // Mock implementation
+        guard session.isActive && !session.isPaused else { return }
+        
+        // Mock 거리 증가 (50-100m 랜덤)
+        let mockDistance = Double.random(in: 50...100)
+        session.distance += mockDistance
+        
+        // Mock 칼로리 계산
+        session.calories = session.distance / 1000.0 * 60.0 // 1km당 60kcal
+        
+        print("Mock 위치 업데이트: 거리 +\(String(format: "%.1f", mockDistance))m")
     }
     
     func updateHeartRate(_ heartRate: Int) async throws -> Void {
-        // Mock implementation
+        session.heartRate = heartRate
+        print("Mock 심박수 수동 업데이트: \(heartRate) bpm")
     }
     
     func getSession() async -> RunningSession? {
-        return RunningSession(
-            distance: 3120, // 3.12km
-            currentPace: 5.5,
-            averagePace: 5.3,
-            heartRate: 145,
-            isActive: false,
-            isPaused: true,
-            elapsedTime: 1623 // 27분 3초
-        )
+        // 러닝이 활성 상태이고 일시정지가 아닐 때 실시간으로 elapsedTime 계산
+        if session.isActive && !session.isPaused, let startTime = session.startTime {
+            session.elapsedTime = Date().timeIntervalSince(startTime)
+        }
+        return session
+    }
+    
+    func getUserProfile() async -> UserProfile {
+        return UserProfile()
+    }
+    
+    func updateUserProfile(_ profile: UserProfile) async throws -> Void {
+        print("Mock 사용자 프로필 업데이트")
+    }
+    
+    func enableBackgroundTracking() async throws -> Void {
+        print("Mock 백그라운드 추적 활성화")
+    }
+    
+    func disableBackgroundTracking() async throws -> Void {
+        print("Mock 백그라운드 추적 비활성화")
+    }
+    
+    private func startMockHeartRateSimulation() {
+        heartRateTimer?.invalidate()
+        
+        heartRateTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [self] timer in
+            guard session.isActive else {
+                timer.invalidate()
+                return
+            }
+            
+            // Mock 심박수 생성
+            let baseHeartRate: Int
+            let variation: Int
+            
+            if session.isPaused {
+                baseHeartRate = 95
+                variation = 5
+            } else {
+                // 시간에 따른 심박수 변화
+                let minutes = session.elapsedTime / 60.0
+                switch minutes {
+                case 0..<3:
+                    baseHeartRate = 125  // 초기
+                    variation = 10
+                case 3..<10:
+                    baseHeartRate = 145  // 안정기
+                    variation = 15
+                case 10..<20:
+                    baseHeartRate = 155  // 지속기
+                    variation = 12
+                default:
+                    baseHeartRate = 160  // 고강도
+                    variation = 8
+                }
+            }
+            
+            let mockHeartRate = baseHeartRate + Int.random(in: -variation...variation)
+            let clampedHeartRate = max(80, min(180, mockHeartRate))
+            
+            DispatchQueue.main.async {
+                self.session.heartRate = clampedHeartRate
+                print("💓 Mock 심박수: \(clampedHeartRate) bpm")
+            }
+        }
     }
 } 

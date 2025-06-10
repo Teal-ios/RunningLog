@@ -11,8 +11,35 @@
 		<string>NanumSquareNeoOTF-Rg.otf</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>이 앱은 현재 위치 기반으로 대기질 정보를 제공합니다.</string>
+	<string>이 앱은 현재 위치 기반으로 대기질 정보를 제공하고 러닝 거리를 추적합니다.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>이 앱은 현재 위치 기반으로 대기질 정보를 제공합니다.</string>
+	<string>이 앱은 백그라운드에서도 러닝 거리와 경로를 추적합니다.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>이 앱은 러닝 중 심박수 정보를 읽어와서 운동 강도를 모니터링합니다.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>이 앱은 러닝 데이터를 Health 앱에 저장합니다.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>background-processing</string>
+		<string>background-fetch</string>
+	</array>
+	<key>NSMotionUsageDescription</key>
+	<string>이 앱은 러닝 중 모션 데이터를 사용하여 칼로리를 계산합니다.</string>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.den.RunningLog.shared</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>den.RunningLog</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>RunningLog</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

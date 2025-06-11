@@ -20,6 +20,7 @@ struct RunningFeature {
         var isTimerActive = false
         var isLocationTrackingActive = false
         var isHeartRateTracking = false
+        var pathLocations: [CLLocation] = []
     }
     
     enum Action {
@@ -61,6 +62,11 @@ struct RunningFeature {
                     // 현재 세션 상태만 동기화 (타이머는 시작하지 않음)
                     if let currentSession = await runningClient.getSession() {
                         await send(.sessionResponse(.success(currentSession)))
+                        // 세션이 활성 상태(러닝 중)라면 위치 추적 및 타이머 재시작
+                        if currentSession.isActive && !currentSession.isPaused {
+                            await send(.startLocationTracking)
+                            await send(.timerTick)
+                        }
                     } else {
                         await send(.sessionResponse(.success(nil)))
                     }
@@ -131,6 +137,7 @@ struct RunningFeature {
                 state.session.endTime = Date()
                 state.isTimerActive = false
                 state.isHeartRateTracking = false
+                state.pathLocations = []
                 
                 return .concatenate(
                     .run { send in
@@ -209,6 +216,10 @@ struct RunningFeature {
             case .updateLocation(let location):
                 // 칼만 필터 및 속도 이상치 제거 적용
                 if let filteredLocation = kalmanFilterManager.filter(location: location) {
+                    // 러닝이 활성 상태(일시정지 제외)일 때만 경로에 추가
+                    if state.session.isActive && !state.session.isPaused {
+                        state.pathLocations.append(filteredLocation)
+                    }
                     return .run { send in
                         try? await runningClient.updateLocation(filteredLocation)
                         if let session = await runningClient.getSession() {

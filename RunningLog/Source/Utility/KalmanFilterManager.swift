@@ -7,9 +7,9 @@ protocol KalmanFilterManagerProtocol {
 
 final class DefaultKalmanFilterManager: KalmanFilterManagerProtocol {
     private var lastLocation: CLLocation?
-    private let filter = KalmanFilter2D()
+    private let filter = KalmanFilter2D(processNoise: 1e-2, measurementNoise: 1e-3)
     private let maxHumanSpeed: CLLocationSpeed = 20.0 // m/s
-    private let minSpeed: CLLocationSpeed = 2.0 // 2m/s 미만 무시
+    private let minSpeed: CLLocationSpeed = 0.3 // 0.3m/s(1km/h) 미만 무시
 
     func filter(location: CLLocation) -> CLLocation? {
         if let last = lastLocation {

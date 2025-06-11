@@ -8,8 +8,13 @@ final class KalmanFilter2D {
     private var lon: Double?
     private var varLat: Double = 1
     private var varLon: Double = 1
-    private let processNoise: Double = 1e-3
-    private let measurementNoise: Double = 1e-2
+    private let processNoise: Double
+    private let measurementNoise: Double
+    
+    init(processNoise: Double = 1e-3, measurementNoise: Double = 1e-2) {
+        self.processNoise = processNoise
+        self.measurementNoise = measurementNoise
+    }
     
     func filter(latitude: Double, longitude: Double) -> (Double, Double) {
         if lat == nil || lon == nil {

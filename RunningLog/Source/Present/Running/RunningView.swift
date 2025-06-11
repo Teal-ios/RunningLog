@@ -7,84 +7,103 @@
 
 import SwiftUI
 import ComposableArchitecture
+import MapKit
 
 struct RunningView: View {
     let store: StoreOf<RunningFeature>
+    @State private var isMapPresented = false
     
     var body: some View {
         WithViewStore(store, observe: { $0 }) { viewStore in
-            VStack(spacing: 0) {
-                // 상태바 영역
-                statusBar(for: viewStore.state)
-                
-                // 러닝 상태 인디케이터 (활성 상태일 때만 표시)
-                if viewStore.session.isActive {
-                    runningStatusIndicator(for: viewStore.state)
+            ZStack {
+                // 1. 러닝 화면 (메인)
+                mainRunningContent(viewStore: viewStore)
+                    .opacity(isMapPresented ? 0 : 1)
+                    .modifier(FlipEffect(angle: isMapPresented ? -90 : 0))
+                // 2. 전체화면 MapView (오버레이)
+                if isMapPresented {
+                    MapFullScreenView(
+                        locations: viewStore.pathLocations,
+                        currentLocation: viewStore.pathLocations.last,
+                        onClose: { withAnimation { isMapPresented = false } },
+                        runningTime: viewStore.session.formattedTime,
+                        pace: viewStore.session.currentPace,
+                        distance: viewStore.session.distance
+                    )
+                    .modifier(FlipEffect(angle: isMapPresented ? 0 : 90))
                 }
-                
-                // 에러 메시지 (있을 경우)
-                if let errorMessage = viewStore.errorMessage {
-                    Text("오류: \(errorMessage)")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .padding(.horizontal)
-                        .padding(.top, 5)
-                }
-                
-                // 메인 컨텐츠
-                VStack(spacing: 30) {
-                    Spacer()
-                    
-                    // 심박수 표시 (강조)
-                    heartRateDisplay(heartRate: viewStore.session.heartRate, isActive: viewStore.session.isActive)
-                    
-                    // 시간 표시
-                    VStack(spacing: 8) {
-                        Text("러닝 시간")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Text(viewStore.session.formattedTime)
-                            .font(.system(size: 50, weight: .bold, design: .monospaced))
-                            .foregroundColor(.primary)
-                    }
-                    
-                    // 거리와 칼로리 통계
-                    HStack(spacing: 40) {
-                        StatItem(
-                            title: "거리",
-                            value: String(format: "%.2f", viewStore.session.distance / 1000),
-                            unit: "km"
-                        )
-                        
-                        StatItem(
-                            title: "칼로리",
-                            value: "\(Int(viewStore.session.calories))",
-                            unit: "kcal"
-                        )
-                        
-                        StatItem(
-                            title: "페이스",
-                            value: viewStore.session.currentPace > 0
-                                ? String(format: "%.2f", viewStore.session.currentPace)
-                                : "--.--",
-                            unit: "분/km"
-                        )
-                    }
-                    
-                    Spacer()
-                    
-                    // 컨트롤 버튼
-                    controlButtons(for: viewStore)
-                    
-                    Spacer()
-                }
-                .padding()
             }
+            .animation(.easeInOut(duration: 0.5), value: isMapPresented)
             .background(Color(.systemBackground))
             .onAppear {
                 viewStore.send(.onAppear)
             }
+        }
+    }
+    
+    // 러닝 화면 내용 (상단 MapView 제거)
+    @ViewBuilder
+    private func mainRunningContent(viewStore: ViewStore<RunningFeature.State, RunningFeature.Action>) -> some View {
+        VStack(spacing: 0) {
+            // 상태바 + 지도 버튼
+            HStack {
+                statusBar(for: viewStore.state)
+                Spacer()
+                Button(action: { withAnimation { isMapPresented = true } }) {
+                    Image(systemName: "map")
+                        .font(.title2)
+                        .padding(8)
+                }
+            }
+            // 러닝 상태 인디케이터 (활성 상태일 때만 표시)
+            if viewStore.session.isActive {
+                runningStatusIndicator(for: viewStore.state)
+            }
+            // MapView 제거 (상단에 항상 보이지 않음)
+            // 에러 메시지 (있을 경우)
+            if let errorMessage = viewStore.errorMessage {
+                Text("오류: \(errorMessage)")
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .padding(.horizontal)
+                    .padding(.top, 5)
+            }
+            // 메인 컨텐츠
+            VStack(spacing: 30) {
+                Spacer()
+                heartRateDisplay(heartRate: viewStore.session.heartRate, isActive: viewStore.session.isActive)
+                VStack(spacing: 8) {
+                    Text("러닝 시간")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    Text(viewStore.session.formattedTime)
+                        .font(.system(size: 50, weight: .bold, design: .monospaced))
+                        .foregroundColor(.primary)
+                }
+                HStack(spacing: 40) {
+                    StatItem(
+                        title: "거리",
+                        value: String(format: "%.2f", viewStore.session.distance / 1000),
+                        unit: "km"
+                    )
+                    StatItem(
+                        title: "칼로리",
+                        value: "\(Int(viewStore.session.calories))",
+                        unit: "kcal"
+                    )
+                    StatItem(
+                        title: "페이스",
+                        value: viewStore.session.currentPace > 0
+                            ? String(format: "%.2f", viewStore.session.currentPace)
+                            : "--.--",
+                        unit: "분/km"
+                    )
+                }
+                Spacer()
+                controlButtons(for: viewStore)
+                Spacer()
+            }
+            .padding()
         }
     }
     
@@ -370,6 +389,95 @@ struct StatItem: View {
             Text(unit)
                 .font(.caption2)
                 .foregroundColor(.secondary)
+        }
+    }
+}
+
+// 3D Flip 효과 Modifier (iOS 16+)
+struct FlipEffect: ViewModifier {
+    let angle: Double
+    func body(content: Content) -> some View {
+        content
+            .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0))
+            .animation(.easeInOut(duration: 0.5), value: angle)
+    }
+}
+
+// 전체화면 MapView 오버레이
+struct MapFullScreenView: View {
+    let locations: [CLLocation]
+    let currentLocation: CLLocation?
+    let onClose: () -> Void
+    let runningTime: String
+    let pace: Double
+    let distance: Double
+    
+    var body: some View {
+        ZStack(alignment: .top) {
+            MapKitView(
+                locations: locations,
+                currentLocation: currentLocation,
+                region: .constant(MKCoordinateRegion(
+                    center: currentLocation?.coordinate ?? CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
+                    span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002)
+                ))
+            )
+            .edgesIgnoringSafeArea(.all)
+
+            // 상단 정보 오버레이
+            HStack(spacing: 24) {
+                // 타이머
+                VStack(spacing: 2) {
+                    Text("시간")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text(runningTime)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+                // 페이스
+                VStack(spacing: 2) {
+                    Text("페이스")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text(pace > 0 ? String(format: "%.2f", pace) : "--.--")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+                // 거리
+                VStack(spacing: 2) {
+                    Text("거리")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text(String(format: "%.2f km", distance / 1000))
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
+            .cornerRadius(16)
+            .padding(.top, 40)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, alignment: .top)
+
+            // 닫기 버튼 (우측 상단)
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: onClose) {
+                        Image(systemName: "map")
+                            .font(.title2)
+                            .padding(16)
+                            .background(Color(.systemBackground).opacity(0.8))
+                            .clipShape(Circle())
+                    }
+                    .padding(.trailing, 20)
+                }
+                Spacer()
+            }
+            .padding(.top, 40)
         }
     }
 }

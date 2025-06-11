@@ -9,12 +9,16 @@ public protocol LocationClient {
 // MARK: - Extensions
 extension LocationClient {
     static var live: LocationClient {
-        LocationClientImpl()
+        SharedLocationClient.shared
     }
     
     static var mock: LocationClient {
         MockLocationClient()
     }
+}
+
+private class SharedLocationClient {
+    static let shared: LocationClient = LocationClientImpl()
 }
 
 // MARK: - Mock Implementation
@@ -43,4 +47,5 @@ struct MockLocationClient: LocationClient {
             }
         }
     }
-} 
+}
+

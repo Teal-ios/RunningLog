@@ -50,7 +50,7 @@ struct RunningView: View {
                     }
                     
                     // 거리와 칼로리 통계
-                    HStack(spacing: 60) {
+                    HStack(spacing: 40) {
                         StatItem(
                             title: "거리",
                             value: String(format: "%.2f", viewStore.session.distance / 1000),
@@ -61,6 +61,14 @@ struct RunningView: View {
                             title: "칼로리",
                             value: "\(Int(viewStore.session.calories))",
                             unit: "kcal"
+                        )
+                        
+                        StatItem(
+                            title: "페이스",
+                            value: viewStore.session.currentPace > 0
+                                ? String(format: "%.2f", viewStore.session.currentPace)
+                                : "--.--",
+                            unit: "분/km"
                         )
                     }
                     

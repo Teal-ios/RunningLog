@@ -18,8 +18,10 @@ class LocationClientImpl: NSObject, LocationClient {
         self.locationManager = CLLocationManager()
         super.init()
         self.locationManager.delegate = self
+        let delegateStatus = self.locationManager.delegate != nil ? "OK" : "nil"
+        print("🧩 LocationClientImpl init, delegate: \(delegateStatus)")
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        self.locationManager.distanceFilter = 5.0 // 5미터마다 업데이트
+        self.locationManager.distanceFilter = 1.0 // 5미터마다 업데이트
     }
     
     func requestLocation() async throws -> (latitude: Double, longitude: Double, address: String) {
@@ -49,6 +51,7 @@ class LocationClientImpl: NSObject, LocationClient {
     }
     
     func requestLocationUpdates() async throws -> AsyncStream<CLLocation> {
+        print("🟢 requestLocationUpdates() 호출됨")
         return AsyncStream { continuation in
             self.locationUpdatesContinuation = continuation
             
@@ -108,10 +111,18 @@ class LocationClientImpl: NSObject, LocationClient {
         
         return "알 수 없는 위치"
     }
+    
+    deinit {
+        print("❌ LocationClientImpl deinit(메모리 해제됨)")
+    }
 }
 
 extension LocationClientImpl: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        print("🔥 didUpdateLocations 진입: count = \(locations.count)")
+        if let loc = locations.first {
+            print("🔥 위치 콜백: \(loc.coordinate.latitude), \(loc.coordinate.longitude)")
+        }
         print("📍 위치 업데이트 수신: \(locations.count)개")
         
         guard let location = locations.first else {
@@ -142,7 +153,7 @@ extension LocationClientImpl: CLLocationManagerDelegate {
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("📍 위치 업데이트 실패: \(error.localizedDescription)")
+        print("❗️ 위치 업데이트 실패: \(error.localizedDescription)")
         
         if let continuation = locationContinuation {
             self.locationContinuation = nil
@@ -160,7 +171,7 @@ extension LocationClientImpl: CLLocationManagerDelegate {
         
         switch status {
         case .authorizedWhenInUse, .authorizedAlways:
-            print("📍 위치 권한 승인됨 - 위치 요청 시작")
+            print("✅ 위치 권한 승인됨")
             
             // 단일 위치 요청이 있는 경우
             if locationContinuation != nil {
@@ -173,7 +184,7 @@ extension LocationClientImpl: CLLocationManagerDelegate {
             }
             
         case .denied, .restricted:
-            print("📍 위치 권한 거부됨")
+            print("❌ 위치 권한 거부됨")
             
             if let continuation = locationContinuation {
                 self.locationContinuation = nil
@@ -186,10 +197,10 @@ extension LocationClientImpl: CLLocationManagerDelegate {
             }
             
         case .notDetermined:
-            print("📍 위치 권한 미결정")
+            print("❓ 위치 권한 미결정")
             
         @unknown default:
-            print("📍 알 수 없는 권한 상태")
+            print("❓ 알 수 없는 권한 상태")
         }
     }
 } 

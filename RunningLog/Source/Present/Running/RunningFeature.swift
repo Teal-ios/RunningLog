@@ -55,6 +55,7 @@ struct RunningFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                print("[RunningFeature] locationClient 인스턴스 주소: \(Unmanaged.passUnretained(locationClient as AnyObject).toOpaque())")
                 return .run { send in
                     // 현재 세션 상태만 동기화 (타이머는 시작하지 않음)
                     if let currentSession = await runningClient.getSession() {
@@ -205,6 +206,7 @@ struct RunningFeature {
                 }
                 
             case let .updateLocation(location):
+                print("🟠 RunningFeature - updateLocation: \(location.coordinate.latitude), \(location.coordinate.longitude)")
                 // 세션이 활성 상태일 때만 위치 업데이트 처리
                 guard state.session.isActive && !state.session.isPaused else { return .none }
                 

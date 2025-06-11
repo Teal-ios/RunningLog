@@ -122,21 +122,13 @@ class RunningClientImpl: RunningClient {
     private var userProfile = UserProfile()
     private var locations: [CLLocation] = []
     private var lastLocation: CLLocation?
-    private var locationManager: CLLocationManager?
     private let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
     private let healthStore = HKHealthStore()
     private var heartRateQuery: HKQuery?
     private var isUsingRealHeartRate = false
     
     init() {
-        setupLocationManager()
         setupHealthKit()
-    }
-    
-    private func setupLocationManager() {
-        locationManager = CLLocationManager()
-        locationManager?.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager?.distanceFilter = 5.0 // 5미터마다 업데이트
     }
     
     private func setupHealthKit() {
@@ -271,39 +263,21 @@ class RunningClientImpl: RunningClient {
         session.heartRate = 0
         locations.removeAll()
         lastLocation = nil
-        
-        // 심박수 플래그 초기화
         isUsingRealHeartRate = false
-        
         print("러닝 시작: \(Date())")
-        
-        // 위젯 데이터 업데이트
         updateWidgetData()
-        
-        // 심박수 모니터링 시작
         startHeartRateMonitoring()
-        
-        // 백그라운드 위치 추적 시작
-        try await enableBackgroundTracking()
     }
     
     func pauseRunning() async throws -> Void {
         session.isPaused = true
-        locationManager?.stopUpdatingLocation()
-        
         print("러닝 일시정지")
-        
-        // 위젯 데이터 업데이트
         updateWidgetData()
     }
     
     func resumeRunning() async throws -> Void {
         session.isPaused = false
-        locationManager?.startUpdatingLocation()
-        
         print("러닝 재개")
-        
-        // 위젯 데이터 업데이트
         updateWidgetData()
     }
     
@@ -311,32 +285,21 @@ class RunningClientImpl: RunningClient {
         session.isActive = false
         session.isPaused = false
         session.endTime = Date()
-        
         print("러닝 종료: 거리 \(session.formattedDistance)km, 시간 \(session.formattedTime)")
-        
-        // Calculate final average pace and calories
         if session.distance > 0 && session.elapsedTime > 0 {
             let distanceInKm = session.distance / 1000.0
             let timeInMinutes = session.elapsedTime / 60.0
             session.averagePace = timeInMinutes / distanceInKm
         }
-        
-        // 최종 칼로리 계산
         session.calculateCalories(userProfile: userProfile)
-        
-        // 위젯 데이터 업데이트
         updateWidgetData()
-        
-        // 심박수 모니터링 중지
         stopHeartRateMonitoring()
-        
-        // 백그라운드 추적 중지
-        try await disableBackgroundTracking()
     }
     
     func updateLocation(_ location: CLLocation) async throws -> Void {
         guard session.isActive && !session.isPaused else { return }
         
+        print("🏃‍♂️ [러닝 중] 위치 업데이트: \(location.coordinate.latitude), \(location.coordinate.longitude)")
         print("위치 업데이트: \(location.coordinate.latitude), \(location.coordinate.longitude)")
         
         locations.append(location)
@@ -395,49 +358,11 @@ class RunningClientImpl: RunningClient {
     }
     
     func enableBackgroundTracking() async throws -> Void {
-        guard let locationManager = locationManager else { return }
-        
-        print("백그라운드 위치 추적 활성화")
-        
-        // 백그라운드 위치 권한 요청
-        locationManager.requestAlwaysAuthorization()
-        
-        // 백그라운드에서도 위치 업데이트 허용
-        locationManager.allowsBackgroundLocationUpdates = true
-        locationManager.pausesLocationUpdatesAutomatically = false
-        
-        // 위치 업데이트 시작
-        locationManager.startUpdatingLocation()
-        
-        // 백그라운드 작업 시작
-        beginBackgroundTask()
+        print("백그라운드 위치 추적 활성화 (LocationClient에 위임)")
     }
     
     func disableBackgroundTracking() async throws -> Void {
-        guard let locationManager = locationManager else { return }
-        
-        print("백그라운드 위치 추적 비활성화")
-        
-        locationManager.stopUpdatingLocation()
-        locationManager.allowsBackgroundLocationUpdates = false
-        
-        endBackgroundTask()
-    }
-    
-    private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
-    
-    private func beginBackgroundTask() {
-        backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "RunningTracking") {
-            // 백그라운드 작업 시간이 만료되기 전에 정리
-            self.endBackgroundTask()
-        }
-    }
-    
-    private func endBackgroundTask() {
-        if backgroundTaskID != .invalid {
-            UIApplication.shared.endBackgroundTask(backgroundTaskID)
-            backgroundTaskID = .invalid
-        }
+        print("백그라운드 위치 추적 비활성화 (LocationClient에 위임)")
     }
     
     private func stopHeartRateMonitoring() {

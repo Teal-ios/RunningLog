@@ -11,7 +11,6 @@ import CoreLocation
 // MARK: - Views
 struct WeatherView: View {
     let store: StoreOf<WeatherFeature>
-    @StateObject private var locationManager = LocationManager()
     
     var body: some View {
         WithPerceptionTracking {
@@ -23,7 +22,6 @@ struct WeatherView: View {
                         ProgressView("날씨 정보를 불러오는 중...")
                             .frame(height: 200)
                     } else if let weatherData = store.weatherData {
-                        aqiView(weatherData: weatherData)
                         currentWeatherView(weatherData: weatherData)
                         hourlyForecastView(weatherData: weatherData)
                     } else if let errorMessage = store.errorMessage {
@@ -38,17 +36,9 @@ struct WeatherView: View {
             }
             .background(Color(UIColor.systemGroupedBackground))
             .onAppear {
-                locationManager.requestLocation()
-                locationManager.onUpdate = { location, address in
-                    store.send(.updateLocation(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, address: address))
-                }
-                locationManager.onError = { errorMsg in
-                    store.send(.locationError(errorMsg))
-                }
                 store.send(.onAppear)
             }
             .refreshable {
-                locationManager.requestLocation()
                 store.send(.refreshWeather)
             }
         }
@@ -57,14 +47,14 @@ struct WeatherView: View {
     private var headerView: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text("RUN")
+                Text("RUNNING")
                     .font(.title)
                     .fontWeight(.bold)
-                    .foregroundColor(.green)
-                + Text("BUNG")
+                    .foregroundColor(RLColor.primary)
+                + Text("LOG")
                     .font(.title)
                     .fontWeight(.bold)
-                    .foregroundColor(.orange)
+                    .foregroundColor(RLColor.accent)
             }
             
             Spacer()
@@ -78,77 +68,24 @@ struct WeatherView: View {
         }
     }
     
-    private func aqiView(weatherData: WeatherData) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("AQI")
-                .font(.headline)
-                .fontWeight(.medium)
-            
-            HStack(spacing: 8) {
-                ForEach(0..<5) { index in
-                    VStack {
-                        Text(getDateString(for: index))
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        
-                        VStack(spacing: 4) {
-                            // PM10
-                            Text("PM10")
-                                .font(.caption2)
-                                .foregroundColor(.white)
-                            Text("\(weatherData.pm10 + index * 5)")
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                        }
-                        .frame(height: 60)
-                        .frame(maxWidth: .infinity)
-                        .background(getPM10Color(value: weatherData.pm10 + index * 5))
-                        .cornerRadius(8)
-                        
-                        VStack(spacing: 4) {
-                            // PM2.5
-                            Text("PM2.5")
-                                .font(.caption2)
-                                .foregroundColor(.white)
-                            Text("\(weatherData.pm25 + index * 10)")
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                        }
-                        .frame(height: 60)
-                        .frame(maxWidth: .infinity)
-                        .background(getPM25Color(value: weatherData.pm25 + index * 10))
-                        .cornerRadius(8)
-                    }
-                }
-            }
-        }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(12)
-    }
-    
     private func currentWeatherView(weatherData: WeatherData) -> some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack {
                 Text("실시간 기상 정보")
                     .font(.headline)
                     .fontWeight(.medium)
-                
                 Spacer()
-                
-                Text("29일 16:09 기준")
+                Text(getCurrentTimeString() + " 기준")
                     .font(.caption)
                     .foregroundColor(.gray)
             }
             
             HStack(spacing: 20) {
                 weatherInfoItem(
-                    icon: "sun.max.fill",
+                    icon: getWeatherIcon(for: weatherData.weatherCondition),
                     title: weatherData.weatherCondition,
                     value: "\(Int(weatherData.temperature))°C",
-                    iconColor: .orange
+                    iconColor: getWeatherIconColor(for: weatherData.weatherCondition)
                 )
                 
                 weatherInfoItem(
@@ -222,35 +159,33 @@ struct WeatherView: View {
                 .fontWeight(.medium)
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 15) {
+                HStack(alignment: .top, spacing: 15) {
                     ForEach(weatherData.hourlyForecast) { hourly in
                         VStack(spacing: 8) {
-                            Text(hourly.time)
+                            // 날짜와 시간을 한 셀에 함께 표시
+                            Text(getDateStringForHourly(date: hourly.timestamp) + "\n" + hourly.time)
                                 .font(.caption)
-                                .foregroundColor(.gray)
-                            
-                            Image(systemName: getWeatherIcon(for: hourly.condition))
-                                .font(.title2)
-                                .foregroundColor(getWeatherIconColor(for: hourly.condition))
-                            
+                                .fontWeight(.semibold)
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(.primary)
+                            // SFSymbol로 날씨 아이콘 표시
+                            Image(systemName: sfSymbolName(for: hourly.weatherIcon))
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 36, height: 36)
+                                .foregroundColor(sfSymbolTintColor(for: hourly.weatherIcon))
                             Text("\(Int(hourly.temperature))°C")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
-                            
                             Text("\(hourly.humidity)%")
                                 .font(.caption2)
                                 .foregroundColor(.gray)
-                            
                             Text("\(Int(hourly.windSpeed))m/s")
                                 .font(.caption2)
                                 .foregroundColor(.gray)
                         }
                         .padding(.vertical, 10)
                         .padding(.horizontal, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(hourly.time == "18:00" ? Color.green : Color.clear, lineWidth: 2)
-                        )
                     }
                 }
                 .padding(.horizontal)
@@ -326,44 +261,61 @@ struct WeatherView: View {
         default: return .orange
         }
     }
-}
-
-class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
-    private let manager = CLLocationManager()
-    @Published var lastLocation: CLLocation?
-    @Published var address: String = ""
-    var onUpdate: ((CLLocation, String) -> Void)?
-    var onError: ((String) -> Void)?
     
-    override init() {
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
+    private func getCurrentTimeString() -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "M월 d일 HH:mm"
+        return formatter.string(from: Date())
     }
     
-    func requestLocation() {
-        manager.requestWhenInUseAuthorization()
-        manager.requestLocation()
+    private func getDateStringForHourly(date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "M월 d일"
+        return formatter.string(from: date)
     }
     
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
-        self.lastLocation = location
-        // 주소 변환
-        let geocoder = CLGeocoder()
-        geocoder.reverseGeocodeLocation(location) { placemarks, error in
-            if let error = error {
-                self.onError?(error.localizedDescription)
-                return
-            }
-            let placemark = placemarks?.first
-            let address = [placemark?.locality, placemark?.subLocality, placemark?.thoroughfare].compactMap { $0 }.joined(separator: " ")
-            self.address = address
-            self.onUpdate?(location, address)
+    private func getOpenWeatherIconURL(icon: String) -> URL? {
+        // OpenWeather 공식 아이콘 URL
+        URL(string: "https://openweathermap.org/img/wn/\(icon)@2x.png")
+    }
+    
+    // OpenWeather 아이콘 코드 → SFSymbol 이름 매핑 함수
+    private func sfSymbolName(for iconCode: String) -> String {
+        switch iconCode {
+        case "01d": return "sun.max.fill"         // 맑음(주간)
+        case "01n": return "moon.stars.fill"      // 맑음(야간)
+        case "02d": return "cloud.sun.fill"       // 약간 흐림(주간)
+        case "02n": return "cloud.moon.fill"      // 약간 흐림(야간)
+        case "03d", "03n": return "cloud.fill"    // 구름
+        case "04d", "04n": return "smoke.fill"    // 짙은 구름
+        case "09d", "09n": return "cloud.drizzle.fill" // 이슬비
+        case "10d": return "cloud.sun.rain.fill"  // 비(주간)
+        case "10n": return "cloud.moon.rain.fill" // 비(야간)
+        case "11d", "11n": return "cloud.bolt.rain.fill" // 천둥번개
+        case "13d", "13n": return "snowflake"     // 눈
+        case "50d", "50n": return "cloud.fog.fill"// 안개
+        default: return "questionmark.circle.fill"
         }
     }
     
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        self.onError?(error.localizedDescription)
+    // SFSymbol에 맞는 tintColor 반환 함수
+    private func sfSymbolTintColor(for iconCode: String) -> Color {
+        switch iconCode {
+        case "01d": return .orange           // 맑음(주간)
+        case "01n": return .yellow           // 맑음(야간)
+        case "02d": return .yellow           // 약간 흐림(주간)
+        case "02n": return .gray             // 약간 흐림(야간)
+        case "03d", "03n": return .gray      // 구름
+        case "04d", "04n": return .gray      // 짙은 구름
+        case "09d", "09n": return .blue      // 이슬비
+        case "10d": return .blue             // 비(주간)
+        case "10n": return .indigo           // 비(야간)
+        case "11d", "11n": return .purple    // 천둥번개
+        case "13d", "13n": return .mint      // 눈
+        case "50d", "50n": return .teal      // 안개
+        default: return .gray
+        }
     }
 }

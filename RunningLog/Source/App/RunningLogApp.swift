@@ -6,12 +6,20 @@
 //
 
 import SwiftUI
+import ComposableArchitecture
 
 @main
 struct RunningLogApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+//            WeatherView(
+//                 store: Store(initialState: WeatherFeature.State()) {
+//                     WeatherFeature()
+//                 }
+//             )
+            MainTabView(store: Store(initialState: MainTabFeature.State(), reducer: {
+                MainTabFeature()
+            }))
         }
     }
 }

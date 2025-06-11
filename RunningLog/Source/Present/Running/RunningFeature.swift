@@ -44,6 +44,7 @@ struct RunningFeature {
     @Dependency(\.runningClient) var runningClient
     @Dependency(\.locationClient) var locationClient
     @Dependency(\.continuousClock) var clock
+    @Dependency(\.kalmanFilterManager) var kalmanFilterManager
     
     private enum CancelID { 
         case timer
@@ -205,21 +206,18 @@ struct RunningFeature {
                     }
                 }
                 
-            case let .updateLocation(location):
-                print("🟠 RunningFeature - updateLocation: \(location.coordinate.latitude), \(location.coordinate.longitude)")
-                // 세션이 활성 상태일 때만 위치 업데이트 처리
-                guard state.session.isActive && !state.session.isPaused else { return .none }
-                
-                return .run { send in
-                    // RunningClient에 위치 업데이트 전달
-                    await send(.runningActionResponse(
-                        Result { try await runningClient.updateLocation(location) }
-                    ))
-                    
-                    // 업데이트된 세션 정보 가져오기
-                    await send(.sessionResponse(
-                        Result { await runningClient.getSession() }
-                    ))
+            case .updateLocation(let location):
+                // 칼만 필터 및 속도 이상치 제거 적용
+                if let filteredLocation = kalmanFilterManager.filter(location: location) {
+                    return .run { send in
+                        try? await runningClient.updateLocation(filteredLocation)
+                        if let session = await runningClient.getSession() {
+                            await send(.sessionResponse(.success(session)))
+                        }
+                    }
+                } else {
+                    print("[RunningFeature] 이상치 위치 무시")
+                    return .none
                 }
                 
             case let .updateHeartRate(heartRate):

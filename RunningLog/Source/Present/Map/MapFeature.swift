@@ -2,6 +2,56 @@ import Foundation
 import ComposableArchitecture
 import CoreLocation
 
+// MARK: - 2D Kalman Filter 구현
+final class KalmanFilter2D {
+    private var lat: Double?
+    private var lon: Double?
+    private var varLat: Double = 1
+    private var varLon: Double = 1
+    private let processNoise: Double = 1e-3
+    private let measurementNoise: Double = 1e-2
+    
+    func filter(latitude: Double, longitude: Double) -> (Double, Double) {
+        if lat == nil || lon == nil {
+            lat = latitude
+            lon = longitude
+            return (latitude, longitude)
+        }
+        // 예측 단계
+        varLat += processNoise
+        varLon += processNoise
+        // 측정 단계
+        let kLat = varLat / (varLat + measurementNoise)
+        let kLon = varLon / (varLon + measurementNoise)
+        lat = lat! + kLat * (latitude - lat!)
+        lon = lon! + kLon * (longitude - lon!)
+        varLat = (1 - kLat) * varLat
+        varLon = (1 - kLon) * varLon
+        return (lat!, lon!)
+    }
+    func reset() {
+        lat = nil
+        lon = nil
+        varLat = 1
+        varLon = 1
+    }
+}
+
+// MARK: - TCA DependencyKey/DependencyValues
+import ComposableArchitecture
+import CoreLocation
+
+private enum KalmanFilterManagerKey: DependencyKey {
+    static let liveValue: KalmanFilterManagerProtocol = DefaultKalmanFilterManager()
+}
+
+extension DependencyValues {
+    var kalmanFilterManager: KalmanFilterManagerProtocol {
+        get { self[KalmanFilterManagerKey.self] }
+        set { self[KalmanFilterManagerKey.self] = newValue }
+    }
+}
+
 @Reducer
 struct MapFeature {
     @ObservableState
@@ -22,6 +72,7 @@ struct MapFeature {
     
     @Dependency(\.locationClient) var locationClient
     @Dependency(\.continuousClock) var clock
+    @Dependency(\.kalmanFilterManager) var kalmanFilterManager: KalmanFilterManagerProtocol
     
     private enum CancelID { case locationTracking }
     
@@ -34,6 +85,7 @@ struct MapFeature {
             case .startTracking:
                 state.isTracking = true
                 state.errorMessage = nil
+                kalmanFilterManager.reset()
                 return .run { send in
                     do {
                         for try await location in try await locationClient.requestLocationUpdates() {
@@ -49,8 +101,10 @@ struct MapFeature {
                 return .cancel(id: CancelID.locationTracking)
             case let .updateLocation(location):
                 print("🟣 MapFeature - updateLocation: \(location.coordinate.latitude), \(location.coordinate.longitude)")
-                state.currentLocation = location
-                state.locations.append(location)
+                if let filteredLocation = kalmanFilterManager.filter(location: location) {
+                    state.currentLocation = filteredLocation
+                    state.locations.append(filteredLocation)
+                }
                 return .none
             case let .locationError(msg):
                 state.errorMessage = msg

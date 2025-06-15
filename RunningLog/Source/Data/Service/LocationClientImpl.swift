@@ -22,6 +22,8 @@ class LocationClientImpl: NSObject, LocationClient {
         print("🧩 LocationClientImpl init, delegate: \(delegateStatus)")
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBest
         self.locationManager.distanceFilter = 1.0 // 5미터마다 업데이트
+        self.locationManager.allowsBackgroundLocationUpdates = true
+        self.locationManager.pausesLocationUpdatesAutomatically = false
     }
     
     func requestLocation() async throws -> (latitude: Double, longitude: Double, address: String) {

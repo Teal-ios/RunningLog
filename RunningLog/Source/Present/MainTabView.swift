@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import RunningLog
 
 struct MainTabView: View {
     let store: StoreOf<MainTabFeature>
@@ -60,6 +61,13 @@ struct MainTabView: View {
                     )
                 }
                 .tag(MainTabFeature.Tab.map)
+                
+                // 기록 탭
+                RunningRecordListView(store: store.scope(state: \ .runningRecordList, action: MainTabFeature.Action.runningRecordList))
+                    .tabItem {
+                        Label("기록", systemImage: "list.bullet")
+                    }
+                    .tag(MainTabFeature.Tab.record)
             }
             .accentColor(.blue)
         }

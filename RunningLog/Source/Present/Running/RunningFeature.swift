@@ -137,21 +137,46 @@ struct RunningFeature {
                 state.session.endTime = Date()
                 state.isTimerActive = false
                 state.isHeartRateTracking = false
+                let session = state.session
+                let path = state.pathLocations.map { $0.coordinate }
+                // 값 유효성 체크: 거리, 시간, 경로 모두 있어야 저장
+                guard session.distance > 0, session.elapsedTime > 0, !path.isEmpty else {
+                    print("[러닝기록] 거리/시간/경로 값이 없어 저장하지 않음")
+                    state.pathLocations = []
+                    // 러닝 종료 후 상태 완전 초기화
+                    state.session = RunningSession()
+                    return .concatenate(
+                        .cancel(id: CancelID.timer),
+                        .run { send in await send(.runningActionResponse(.success(()))) }
+                    )
+                }
+                let record = RunningRecord(
+                    id: UUID(),
+                    startTime: session.startTime ?? Date(),
+                    endTime: Date(),
+                    distance: session.distance,
+                    calories: session.calories,
+                    elapsedTime: session.elapsedTime,
+                    averagePace: session.averagePace,
+                    path: path
+                )
                 state.pathLocations = []
-                
+                if PersistenceController.shared.isStoreLoaded {
+                    let repository = CoreDataRunningRecordRepository(context: PersistenceController.shared.container.viewContext)
+                    do {
+                        try repository.save(record: record)
+                        print("러닝 기록 저장 성공: \(record)")
+                    } catch {
+                        print("러닝 기록 저장 실패: \(error)")
+                    }
+                } else {
+                    print("[러닝기록] CoreData store가 아직 준비되지 않음")
+                }
+                // 러닝 종료 후 상태 완전 초기화
+                state.session = RunningSession()
                 return .concatenate(
-                    .run { send in
-                        await send(.runningActionResponse(
-                            Result { try await runningClient.stopRunning() }
-                        ))
-                    },
-                    .run { send in
-                        await send(.stopLocationTracking)
-                        await send(.stopHeartRateTracking)
-                    },
                     .cancel(id: CancelID.timer),
-                    .cancel(id: CancelID.locationTracking),
-                    .cancel(id: CancelID.heartRateTracking)
+                    .run { send in await send(.runningActionResponse(.success(()))) }
                 )
                 
             case .startLocationTracking:

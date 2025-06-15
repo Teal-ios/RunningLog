@@ -7,7 +7,6 @@
 
 import Foundation
 import ComposableArchitecture
-import RunningLog
 
 @Reducer
 struct MainTabFeature {
@@ -16,14 +15,12 @@ struct MainTabFeature {
         var selectedTab: Tab = .running
         var weatherState = WeatherFeature.State()
         var runningState = RunningFeature.State()
-        var mapState = MapFeature.State()
         var runningRecordList = RunningRecordListFeature.State()
     }
     
     enum Tab: CaseIterable {
         case weather
         case running
-        case map
         case record
         
         var title: String {
@@ -32,8 +29,6 @@ struct MainTabFeature {
                 return "날씨"
             case .running:
                 return "러닝"
-            case .map:
-                return "지도"
             case .record:
                 return "기록"
             }
@@ -45,8 +40,6 @@ struct MainTabFeature {
                 return "cloud.sun"
             case .running:
                 return "figure.run"
-            case .map:
-                return "map"
             case .record:
                 return "list.bullet"
             }
@@ -57,7 +50,6 @@ struct MainTabFeature {
         case tabSelected(Tab)
         case weather(WeatherFeature.Action)
         case running(RunningFeature.Action)
-        case map(MapFeature.Action)
         case runningRecordList(RunningRecordListFeature.Action)
         case selectTab(Tab)
     }
@@ -69,10 +61,6 @@ struct MainTabFeature {
         
         Scope(state: \.runningState, action: \.running) {
             RunningFeature()
-        }
-        
-        Scope(state: \.mapState, action: \.map) {
-            MapFeature()
         }
         
         Scope(state: \.runningRecordList, action: /Action.runningRecordList) {
@@ -87,10 +75,7 @@ struct MainTabFeature {
                 
             case .weather:
                 return .none
-                
             case .running:
-                return .none
-            case .map:
                 return .none
             case .runningRecordList:
                 return .none

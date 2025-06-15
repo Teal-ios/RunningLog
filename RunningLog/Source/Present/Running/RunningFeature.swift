@@ -76,6 +76,9 @@ struct RunningFeature {
                 // 이미 활성 상태인 세션은 재시작하지 않음
                 guard !state.session.isActive else { return .none }
                 
+                // 러닝 시작 시 경로 배열도 초기화
+                state.pathLocations = []
+                
                 state.isLoading = true
                 state.session.isActive = true
                 state.session.isPaused = false
@@ -147,7 +150,16 @@ struct RunningFeature {
                     state.session = RunningSession()
                     return .concatenate(
                         .cancel(id: CancelID.timer),
-                        .run { send in await send(.runningActionResponse(.success(()))) }
+                        .cancel(id: CancelID.locationTracking),
+                        .cancel(id: CancelID.heartRateTracking),
+                        .run { send in
+                            do {
+                                try await runningClient.stopRunning()
+                            } catch {
+                                print("[러닝 종료] stopRunning 에러: \(error)")
+                            }
+                            await send(.runningActionResponse(.success(())))
+                        }
                     )
                 }
                 let record = RunningRecord(
@@ -176,7 +188,16 @@ struct RunningFeature {
                 state.session = RunningSession()
                 return .concatenate(
                     .cancel(id: CancelID.timer),
-                    .run { send in await send(.runningActionResponse(.success(()))) }
+                    .cancel(id: CancelID.locationTracking),
+                    .cancel(id: CancelID.heartRateTracking),
+                    .run { send in
+                        do {
+                            try await runningClient.stopRunning()
+                        } catch {
+                            print("[러닝 종료] stopRunning 에러: \(error)")
+                        }
+                        await send(.runningActionResponse(.success(())))
+                    }
                 )
                 
             case .startLocationTracking:

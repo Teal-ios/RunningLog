@@ -7,7 +7,6 @@
 
 import SwiftUI
 import ComposableArchitecture
-import RunningLog
 
 struct MainTabView: View {
     let store: StoreOf<MainTabFeature>
@@ -46,21 +45,6 @@ struct MainTabView: View {
                     )
                 }
                 .tag(MainTabFeature.Tab.running)
-                
-                // 지도 탭
-                MapView(
-                    store: store.scope(
-                        state: \.mapState,
-                        action: \.map
-                    )
-                )
-                .tabItem {
-                    Label(
-                        MainTabFeature.Tab.map.title,
-                        systemImage: MainTabFeature.Tab.map.systemImage
-                    )
-                }
-                .tag(MainTabFeature.Tab.map)
                 
                 // 기록 탭
                 RunningRecordListView(store: store.scope(state: \ .runningRecordList, action: MainTabFeature.Action.runningRecordList))

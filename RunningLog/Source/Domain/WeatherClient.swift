@@ -110,7 +110,7 @@ public struct WeatherClient {
                 pm10: 33,
                 pm25: 82,
                 hourlyForecast: [],
-                location: "구로구 서울"
+                location: "대한민국"
             )
         }
     )

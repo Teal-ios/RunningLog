@@ -114,13 +114,6 @@ struct WeatherView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                     
-                    HStack {
-                        Text("어제 05:14")
-                        Spacer()
-                        Text("오늘 19:45")
-                    }
-                    .font(.caption2)
-                    .foregroundColor(.white.opacity(0.8))
                 }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -137,7 +130,7 @@ struct WeatherView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                     
-                    Text("미세먼지 포시 기준 AQI")
+                    Text("미세먼지 표시 기준 AQI")
                         .font(.caption2)
                         .foregroundColor(.white.opacity(0.8))
                 }

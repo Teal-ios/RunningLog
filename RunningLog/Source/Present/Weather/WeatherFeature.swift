@@ -16,7 +16,7 @@ struct WeatherFeature {
         var weatherData: WeatherData?
         var isLoading = false
         var errorMessage: String?
-        var location: String = "구로구 서울"
+        var location: String = "대한민국"
         var latitude: Double? = nil
         var longitude: Double? = nil
     }

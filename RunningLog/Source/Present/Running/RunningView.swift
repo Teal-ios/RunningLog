@@ -12,6 +12,8 @@ import MapKit
 struct RunningView: View {
     let store: StoreOf<RunningFeature>
     @State private var isMapPresented = false
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var isStopAlertPresented = false
     
     var body: some View {
         WithViewStore(store, observe: { $0 }) { viewStore in
@@ -32,11 +34,35 @@ struct RunningView: View {
                     )
                     .modifier(FlipEffect(angle: isMapPresented ? 0 : 90))
                 }
+                // 3. 커스텀 정지 Alert
+                if isStopAlertPresented {
+                    CustomAlertView(
+                        title: "러닝 종료",
+                        message: "러닝을 종료하고 기록을 저장하시겠습니까?",
+                        confirmTitle: "저장하고 종료",
+                        cancelTitle: "취소",
+                        onConfirm: {
+                            isStopAlertPresented = false
+                            viewStore.send(.stopRunning)
+                        },
+                        onCancel: {
+                            isStopAlertPresented = false
+                        }
+                    )
+                }
             }
             .animation(.easeInOut(duration: 0.5), value: isMapPresented)
             .background(Color(.systemBackground))
             .onAppear {
                 viewStore.send(.onAppear)
+            }
+            .onChange(of: scenePhase) { newPhase in
+                if newPhase == .background || newPhase == .inactive {
+                    // 백그라운드/잠금 진입 시 위치 추적 유지
+                    if viewStore.session.isActive && !viewStore.session.isPaused {
+                        viewStore.send(.startLocationTracking)
+                    }
+                }
             }
         }
     }
@@ -350,9 +376,8 @@ struct RunningView: View {
                         .font(.headline)
                     }
                 }
-                
-                // 정지 버튼
-                Button(action: { viewStore.send(.stopRunning) }) {
+                // 정지 버튼 (Alert 표시)
+                Button(action: { isStopAlertPresented = true }) {
                     HStack {
                         Image(systemName: "stop.fill")
                         Text("정지")
@@ -479,6 +504,59 @@ struct MapFullScreenView: View {
             }
             .padding(.top, 40)
         }
+    }
+}
+
+// MARK: - 커스텀 Alert 뷰
+struct CustomAlertView: View {
+    let title: String
+    let message: String
+    let confirmTitle: String
+    let cancelTitle: String
+    let onConfirm: () -> Void
+    let onCancel: () -> Void
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+            VStack(spacing: 20) {
+                Text(title)
+                    .font(.title3).bold()
+                    .foregroundColor(.primary)
+                Text(message)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                HStack(spacing: 16) {
+                    Button(action: onCancel) {
+                        Text(cancelTitle)
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemGray5))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    Button(action: onConfirm) {
+                        Text(confirmTitle)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color.green)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                }
+            }
+            .padding(28)
+            .background(.ultraThinMaterial)
+            .cornerRadius(20)
+            .shadow(radius: 20)
+            .padding(.horizontal, 32)
+        }
+        .transition(.opacity.combined(with: .scale))
+        .animation(.easeInOut, value: 1)
     }
 }
 

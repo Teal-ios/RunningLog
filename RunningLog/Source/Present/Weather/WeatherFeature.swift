@@ -19,6 +19,7 @@ struct WeatherFeature {
         var location: String = "대한민국"
         var latitude: Double? = nil
         var longitude: Double? = nil
+        var recordList: RunningRecordListFeature.State = .init()
     }
     
     enum Action {
@@ -27,6 +28,7 @@ struct WeatherFeature {
         case weatherResponse(Result<WeatherData, Error>)
         case updateLocation(latitude: Double, longitude: Double, address: String)
         case locationError(String)
+        case recordList(RunningRecordListFeature.Action)
     }
     
     @Dependency(\.weatherClient) var weatherClient
@@ -80,7 +82,12 @@ struct WeatherFeature {
                 state.isLoading = false
                 state.errorMessage = errorMsg
                 return .none
+            case let .recordList(action):
+                return .none
             }
+        }
+        Scope(state: \.recordList, action: \.recordList) {
+            RunningRecordListFeature()
         }
     }
 }

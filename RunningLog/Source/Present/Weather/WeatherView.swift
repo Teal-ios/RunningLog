@@ -17,19 +17,7 @@ struct WeatherView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     headerView
-                    
-                    if store.isLoading {
-                        ProgressView("날씨 정보를 불러오는 중...")
-                            .frame(height: 200)
-                    } else if let weatherData = store.weatherData {
-                        currentWeatherView(weatherData: weatherData)
-                        hourlyForecastView(weatherData: weatherData)
-                    } else if let errorMessage = store.errorMessage {
-                        Text("오류: \(errorMessage)")
-                            .foregroundColor(.red)
-                            .frame(height: 200)
-                    }
-                    
+                    mainContent
                     Spacer()
                 }
                 .padding()
@@ -37,9 +25,43 @@ struct WeatherView: View {
             .background(Color(UIColor.systemGroupedBackground))
             .onAppear {
                 store.send(.onAppear)
+                store.send(.recordList(.onAppear))
             }
             .refreshable {
                 store.send(.refreshWeather)
+                store.send(.recordList(.onAppear))
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var mainContent: some View {
+        if store.isLoading {
+            loadingView
+        } else if let weatherData = store.weatherData {
+            weatherDataSection(weatherData: weatherData)
+        } else if let errorMessage = store.errorMessage {
+            errorView(errorMessage: errorMessage)
+        }
+    }
+    
+    private var loadingView: some View {
+        ProgressView("날씨 정보를 불러오는 중...")
+            .frame(height: 200)
+    }
+    
+    private func errorView(errorMessage: String) -> some View {
+        Text("오류: \(errorMessage)")
+            .foregroundColor(.red)
+            .frame(height: 200)
+    }
+    
+    private func weatherDataSection(weatherData: WeatherData) -> some View {
+        VStack(spacing: 20) {
+            currentWeatherView(weatherData: weatherData)
+            hourlyForecastView(weatherData: weatherData)
+            WithViewStore(store.scope(state: \.recordList, action: \.recordList), observe: { $0 }) { recordListViewStore in
+                RecentRunningChartSection(records: Array(recordListViewStore.records.prefix(5)))
             }
         }
     }
@@ -310,5 +332,108 @@ struct WeatherView: View {
         case "50d", "50n": return .teal      // 안개
         default: return .gray
         }
+    }
+}
+
+// 최근 러닝 거리 꺾은선 그래프 섹션
+struct RecentRunningChartSection: View {
+    let records: [RunningRecord]
+    var body: some View {
+        if !records.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("최근 러닝 거리")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                LineChartView(records: records)
+                    .frame(height: 140)
+            }
+            .padding()
+            .background(Color.white)
+            .cornerRadius(12)
+        }
+    }
+}
+
+// 꺾은선 그래프 뷰
+struct LineChartView: View {
+    let records: [RunningRecord]
+    private let topPadding: CGFloat = 20
+    private let bottomPadding: CGFloat = 24
+
+    private var maxDistance: Double {
+        records.map { $0.distance }.max() ?? 1
+    }
+    private var minDistance: Double {
+        records.map { $0.distance }.min() ?? 0
+    }
+    
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                // 배경 그리드
+                VStack {
+                    Spacer()
+                    Rectangle().fill(Color.gray.opacity(0.15)).frame(height: 1)
+                }
+                // 꺾은선
+                if records.count > 1 {
+                    Path { path in
+                        for idx in records.indices {
+                            let record = records[idx]
+                            let x = geo.size.width * CGFloat(idx) / CGFloat(records.count - 1)
+                            let y = yPosition(for: record.distance, in: geo.size)
+                            if idx == 0 {
+                                path.move(to: CGPoint(x: x, y: y))
+                            } else {
+                                path.addLine(to: CGPoint(x: x, y: y))
+                            }
+                        }
+                    }
+                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 3, lineJoin: .round))
+                    .shadow(color: Color.accentColor.opacity(0.15), radius: 4, y: 2)
+                }
+                // 점/라벨
+                ForEach(records.indices, id: \ .self) { idx in
+                    let record = records[idx]
+                    let x = geo.size.width * CGFloat(idx) / CGFloat(records.count - 1)
+                    let y = yPosition(for: record.distance, in: geo.size)
+                    Circle()
+                        .fill(Color.accentColor)
+                        .frame(width: 10, height: 10)
+                        .position(x: x, y: y)
+                    // 거리 라벨 (위로 살짝 띄움)
+                    Text(String(format: "%.1f", record.distance / 1000))
+                        .font(.caption2)
+                        .foregroundColor(.accentColor)
+                        .position(x: x, y: y - 14)
+                }
+                // x축 날짜 라벨
+                ZStack {
+                    ForEach(records.indices, id: \ .self) { idx in
+                        let record = records[idx]
+                        let x = geo.size.width * CGFloat(idx) / CGFloat(records.count - 1)
+                        Text(shortDate(record.startTime))
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                            .position(x: x, y: geo.size.height - 8)
+                    }
+                }
+            }
+        }
+        .padding(.top, topPadding)
+        .padding(.bottom, bottomPadding)
+    }
+    
+    private func yPosition(for distance: Double, in size: CGSize) -> CGFloat {
+        let availableHeight = size.height - topPadding - bottomPadding
+        let ratio = (distance - minDistance) / max(0.01, maxDistance - minDistance)
+        return topPadding + availableHeight * CGFloat(1 - ratio)
+    }
+    
+    private func shortDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "M/d"
+        return formatter.string(from: date)
     }
 }

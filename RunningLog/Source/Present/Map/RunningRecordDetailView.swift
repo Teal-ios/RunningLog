@@ -23,9 +23,13 @@ struct RunningRecordDetailView: View {
             }
             .padding()
             Divider()
-            // 하단 지도
-            MapPolylineView(coordinates: record.path)
-                .edgesIgnoringSafeArea(.bottom)
+            // 하단 지도: PolylineShape → MapKitView로 변경
+            MapKitView(
+                locations: record.path.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) },
+                currentLocation: nil,
+                region: $region
+            )
+            .edgesIgnoringSafeArea(.bottom)
         }
         .onAppear {
             if let first = record.path.first {
@@ -43,22 +47,17 @@ struct IdentifiableCoordinate: Identifiable {
 struct MapPolylineView: View {
     let coordinates: [CLLocationCoordinate2D]
     @State private var region: MKCoordinateRegion = .init()
-    var identifiableCoordinates: [IdentifiableCoordinate] {
-        coordinates.map { IdentifiableCoordinate(coordinate: $0) }
-    }
     var body: some View {
-        Map(coordinateRegion: $region, annotationItems: identifiableCoordinates) { item in
-            MapMarker(coordinate: item.coordinate)
-        }
-        .overlay(
-            PolylineShape(coordinates: coordinates)
-                .stroke(Color.accentColor, lineWidth: 4)
-        )
-        .onAppear {
-            if let first = coordinates.first {
-                region = MKCoordinateRegion(center: first, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
+        Map(coordinateRegion: $region)
+            .overlay(
+                PolylineShape(coordinates: coordinates)
+                    .stroke(Color.accentColor, lineWidth: 4)
+            )
+            .onAppear {
+                if let first = coordinates.first {
+                    region = MKCoordinateRegion(center: first, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
+                }
             }
-        }
     }
 }
 

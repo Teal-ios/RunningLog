@@ -143,7 +143,12 @@ struct RunningFeature {
                 guard session.distance > 0, session.elapsedTime > 0, !path.isEmpty else {
                     print("[러닝기록] 거리/시간/경로 값이 없어 저장하지 않음")
                     state.pathLocations = []
-                    return .run { send in await send(.runningActionResponse(.success(()))) }
+                    // 러닝 종료 후 상태 완전 초기화
+                    state.session = RunningSession()
+                    return .concatenate(
+                        .cancel(id: CancelID.timer),
+                        .run { send in await send(.runningActionResponse(.success(()))) }
+                    )
                 }
                 let record = RunningRecord(
                     id: UUID(),
@@ -156,20 +161,23 @@ struct RunningFeature {
                     path: path
                 )
                 state.pathLocations = []
-                return .run { send in
-                    if PersistenceController.shared.isStoreLoaded {
-                        let repository = CoreDataRunningRecordRepository(context: PersistenceController.shared.container.viewContext)
-                        do {
-                            try repository.save(record: record)
-                            print("러닝 기록 저장 성공: \(record)")
-                        } catch {
-                            print("러닝 기록 저장 실패: \(error)")
-                        }
-                    } else {
-                        print("[러닝기록] CoreData store가 아직 준비되지 않음")
+                if PersistenceController.shared.isStoreLoaded {
+                    let repository = CoreDataRunningRecordRepository(context: PersistenceController.shared.container.viewContext)
+                    do {
+                        try repository.save(record: record)
+                        print("러닝 기록 저장 성공: \(record)")
+                    } catch {
+                        print("러닝 기록 저장 실패: \(error)")
                     }
-                    await send(.runningActionResponse(.success(())))
+                } else {
+                    print("[러닝기록] CoreData store가 아직 준비되지 않음")
                 }
+                // 러닝 종료 후 상태 완전 초기화
+                state.session = RunningSession()
+                return .concatenate(
+                    .cancel(id: CancelID.timer),
+                    .run { send in await send(.runningActionResponse(.success(()))) }
+                )
                 
             case .startLocationTracking:
                 state.isLocationTrackingActive = true

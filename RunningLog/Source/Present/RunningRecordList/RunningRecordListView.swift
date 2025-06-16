@@ -1,6 +1,5 @@
 import SwiftUI
 import ComposableArchitecture
-import RunningLog
 
 struct RunningRecordListView: View {
     let store: StoreOf<RunningRecordListFeature>
@@ -13,13 +12,13 @@ struct RunningRecordListView: View {
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(record.dateString).font(.headline)
+                                Text(record.dateString).font(.headline).foregroundColor(.black)
                                 Text(record.formattedDistance + "  " + record.formattedTime)
-                                    .font(.subheadline).foregroundColor(.secondary)
+                                    .font(.subheadline).foregroundColor(.black)
                             }
                             Spacer()
                             Text(record.formattedPace)
-                                .font(.title3).bold().foregroundColor(.accentColor)
+                                .font(.title3).bold().foregroundColor(.black)
                         }
                         .padding(.vertical, 8)
                     }

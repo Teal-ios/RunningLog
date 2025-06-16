@@ -44,6 +44,7 @@ struct WeatherClient {
                 humidity: nowResponse.main.humidity,
                 windSpeed: nowResponse.wind.speed,
                 weatherCondition: nowResponse.weather.first?.description ?? "",
+                weatherMain: nowResponse.weather.first?.main ?? "",
                 pm10: pm10,
                 pm25: pm25,
                 hourlyForecast: hourlyForecast,

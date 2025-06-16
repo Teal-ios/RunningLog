@@ -12,16 +12,18 @@ struct WeatherData: Codable, Equatable {
     let humidity: Int
     let windSpeed: Double
     let weatherCondition: String
+    let weatherMain: String?
     let pm10: Int
     let pm25: Int
     let hourlyForecast: [HourlyWeather]
     let location: String
     
-    init(temperature: Double, humidity: Int, windSpeed: Double, weatherCondition: String, pm10: Int, pm25: Int, hourlyForecast: [HourlyWeather], location: String) {
+    init(temperature: Double, humidity: Int, windSpeed: Double, weatherCondition: String, weatherMain: String? = nil, pm10: Int, pm25: Int, hourlyForecast: [HourlyWeather], location: String) {
         self.temperature = temperature
         self.humidity = humidity
         self.windSpeed = windSpeed
         self.weatherCondition = weatherCondition
+        self.weatherMain = weatherMain
         self.pm10 = pm10
         self.pm25 = pm25
         self.hourlyForecast = hourlyForecast

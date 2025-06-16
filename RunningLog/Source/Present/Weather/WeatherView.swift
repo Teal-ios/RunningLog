@@ -104,7 +104,7 @@ struct WeatherView: View {
             
             HStack(spacing: 20) {
                 weatherInfoItem(
-                    icon: getWeatherIcon(for: weatherData.weatherCondition),
+                    icon: getWeatherIcon(main: weatherData.weatherMain ?? "", description: weatherData.weatherCondition),
                     title: weatherData.weatherCondition,
                     value: "\(Int(weatherData.temperature))°C",
                     iconColor: getWeatherIconColor(for: weatherData.weatherCondition)
@@ -152,9 +152,9 @@ struct WeatherView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                     
-                    Text("미세먼지 표시 기준 AQI")
-                        .font(.caption2)
-                        .foregroundColor(.white.opacity(0.8))
+//                    Text("미세먼지 표시 기준 AQI")
+//                        .font(.caption2)
+//                        .foregroundColor(.white.opacity(0.8))
                 }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -258,13 +258,31 @@ struct WeatherView: View {
         }
     }
     
-    private func getWeatherIcon(for condition: String) -> String {
-        switch condition {
-        case "sunny": return "sun.max.fill"
-        case "clear": return "sun.max"
-        case "rainy": return "umbrella.fill"
-        case "cloudy": return "cloud.fill"
-        default: return "sun.max.fill"
+    private func getWeatherIcon(main: String, description: String) -> String {
+        let lowerMain = main.lowercased()
+        let lowerDesc = description.lowercased()
+        // 우선순위: main > description
+        switch lowerMain {
+        case "thunderstorm": return "cloud.bolt.rain.fill"
+        case "drizzle": return "cloud.drizzle.fill"
+        case "rain": return "cloud.rain.fill"
+        case "snow": return "snowflake"
+        case "mist", "smoke", "haze", "fog", "dust", "sand", "ash", "squall", "tornado":
+            return "cloud.fog.fill"
+        case "clear": return "sun.max.fill"
+        case "clouds":
+            if lowerDesc.contains("few") { return "cloud.sun.fill" }
+            else if lowerDesc.contains("scattered") { return "cloud.fill" }
+            else if lowerDesc.contains("broken") { return "smoke.fill" }
+            else { return "cloud.fill" }
+        default:
+            // description 기반 추가 매핑
+            if lowerDesc.contains("박무") { return "cloud.fog.fill" }
+            if lowerDesc.contains("맑음") { return "sun.max.fill" }
+            if lowerDesc.contains("비") { return "cloud.rain.fill" }
+            if lowerDesc.contains("눈") { return "snowflake" }
+            if lowerDesc.contains("흐림") { return "cloud.fill" }
+            return "questionmark.circle.fill"
         }
     }
     

@@ -234,7 +234,13 @@ struct RunningFeature {
             case .timerTick:
                 if state.session.isActive && !state.session.isPaused {
                     state.session.elapsedTime += 1
-                    
+
+                    // 1초마다 실시간 페이스 재계산
+                    if state.session.distance > 0 {
+                        let distanceInKm = state.session.distance / 1000.0
+                        let timeInMinutes = state.session.elapsedTime / 60.0
+                        state.session.currentPace = timeInMinutes / distanceInKm
+                    }
                     // 10초마다 위젯 데이터 업데이트
                     if Int(state.session.elapsedTime) % 10 == 0 {
                         let formattedTime = state.session.formattedTime
@@ -264,6 +270,13 @@ struct RunningFeature {
                 if let filteredLocation = kalmanFilterManager.filter(location: location) {
                     // 러닝이 활성 상태(일시정지 제외)일 때만 경로에 추가
                     if state.session.isActive && !state.session.isPaused {
+                        // 거리 누적 개선: 이전 위치와의 거리를 직접 계산하여 누적
+                        if let last = state.pathLocations.last {
+                            let distance = filteredLocation.distance(from: last)
+                            if distance > 1 { // 1m 이상 이동한 경우만 누적
+                                state.session.distance += distance
+                            }
+                        }
                         state.pathLocations.append(filteredLocation)
                     }
                     return .run { send in

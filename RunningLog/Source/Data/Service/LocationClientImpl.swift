@@ -7,9 +7,8 @@
 
 import Foundation
 import CoreLocation
-import ComposableArchitecture
 
-class LocationClientImpl: NSObject, LocationClient {
+final class LocationClientImpl: NSObject, LocationClient {
     private let locationManager: CLLocationManager
     private var locationContinuation: CheckedContinuation<(latitude: Double, longitude: Double, address: String), Error>?
     private var locationUpdatesContinuation: AsyncStream<CLLocation>.Continuation?

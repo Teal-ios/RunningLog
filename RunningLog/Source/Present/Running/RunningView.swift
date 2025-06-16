@@ -447,7 +447,8 @@ struct MapFullScreenView: View {
                     span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002)
                 ))
             )
-            .edgesIgnoringSafeArea(.all)
+            .ignoresSafeArea(edges: .top)
+            .background(Color(.systemBackground))
 
             // 상단 정보 오버레이
             HStack(spacing: 24) {

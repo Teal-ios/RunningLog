@@ -152,9 +152,9 @@ struct WeatherView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                     
-                    Text("미세먼지 표시 기준 AQI")
-                        .font(.caption2)
-                        .foregroundColor(.white.opacity(0.8))
+//                    Text("미세먼지 표시 기준 AQI")
+//                        .font(.caption2)
+//                        .foregroundColor(.white.opacity(0.8))
                 }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -1,59 +1,11 @@
 import Foundation
 import CoreLocation
 
-// MARK: - Models
-public struct WeatherData: Codable, Equatable {
-    public let temperature: Double
-    public let humidity: Int
-    public let windSpeed: Double
-    public let weatherCondition: String
-    public let pm10: Int
-    public let pm25: Int
-    public let hourlyForecast: [HourlyWeather]
-    public let location: String
-    
-    public init(temperature: Double, humidity: Int, windSpeed: Double, weatherCondition: String, pm10: Int, pm25: Int, hourlyForecast: [HourlyWeather], location: String) {
-        self.temperature = temperature
-        self.humidity = humidity
-        self.windSpeed = windSpeed
-        self.weatherCondition = weatherCondition
-        self.pm10 = pm10
-        self.pm25 = pm25
-        self.hourlyForecast = hourlyForecast
-        self.location = location
-    }
-}
-
-public struct HourlyWeather: Codable, Equatable, Identifiable {
-    public let id = UUID()
-    public let time: String
-    public let temperature: Double
-    public let humidity: Int
-    public let windSpeed: Double
-    public let condition: String
-    public let timestamp: Date
-    public let weatherIcon: String
-    
-    public init(time: String, temperature: Double, humidity: Int, windSpeed: Double, condition: String, timestamp: Date, weatherIcon: String) {
-        self.time = time
-        self.temperature = temperature
-        self.humidity = humidity
-        self.windSpeed = windSpeed
-        self.condition = condition
-        self.timestamp = timestamp
-        self.weatherIcon = weatherIcon
-    }
-    
-    private enum CodingKeys: String, CodingKey {
-        case time, temperature, humidity, windSpeed, condition, timestamp, weatherIcon
-    }
-}
-
 // MARK: - API Client
-public struct WeatherClient {
-    public var fetchWeather: @Sendable (_ lat: Double, _ lon: Double) async throws -> WeatherData
+struct WeatherClient {
+    var fetchWeather: @Sendable (_ lat: Double, _ lon: Double) async throws -> WeatherData
     
-    public static let live = WeatherClient(
+    static let live = WeatherClient(
         fetchWeather: { lat, lon in
             let networkService = NetworkService()
             let dataTransferService = DataTransferService(networkService: networkService)
@@ -100,7 +52,7 @@ public struct WeatherClient {
         }
     )
     
-    public static let mock = WeatherClient(
+    static let mock = WeatherClient(
         fetchWeather: { _, _ in
             WeatherData(
                 temperature: 26,

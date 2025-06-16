@@ -6,6 +6,21 @@ struct MapKitView: UIViewRepresentable {
     let currentLocation: CLLocation?
     @Binding var region: MKCoordinateRegion
     
+    // region 변경 감지용
+    private class RegionBox {
+        var lastRegion: MKCoordinateRegion?
+    }
+    private static var regionBox = RegionBox()
+    
+    // region 비교 함수
+    private func isRegionEqual(_ lhs: MKCoordinateRegion?, _ rhs: MKCoordinateRegion) -> Bool {
+        guard let lhs = lhs else { return false }
+        return lhs.center.latitude == rhs.center.latitude &&
+               lhs.center.longitude == rhs.center.longitude &&
+               lhs.span.latitudeDelta == rhs.span.latitudeDelta &&
+               lhs.span.longitudeDelta == rhs.span.longitudeDelta
+    }
+    
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
         mapView.showsUserLocation = true
@@ -13,6 +28,7 @@ struct MapKitView: UIViewRepresentable {
         mapView.isRotateEnabled = false
         mapView.isPitchEnabled = false
         mapView.setRegion(region, animated: false)
+        MapKitView.regionBox.lastRegion = region
         return mapView
     }
     
@@ -32,8 +48,11 @@ struct MapKitView: UIViewRepresentable {
             annotation.title = "현재 위치"
             mapView.addAnnotation(annotation)
         }
-        // region 바인딩 반영 (항상 호출)
-        mapView.setRegion(region, animated: true)
+        // region 바인딩 반영 (변경 시에만 호출)
+        if !isRegionEqual(MapKitView.regionBox.lastRegion, region) {
+            mapView.setRegion(region, animated: true)
+            MapKitView.regionBox.lastRegion = region
+        }
     }
     
     func makeCoordinator() -> Coordinator {

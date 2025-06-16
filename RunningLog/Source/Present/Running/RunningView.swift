@@ -437,18 +437,54 @@ struct MapFullScreenView: View {
     let pace: Double
     let distance: Double
     
+    @State private var region: MKCoordinateRegion = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
+        span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002)
+    )
+    
     var body: some View {
         ZStack(alignment: .top) {
             MapKitView(
                 locations: locations,
                 currentLocation: currentLocation,
-                region: .constant(MKCoordinateRegion(
-                    center: currentLocation?.coordinate ?? CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
-                    span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002)
-                ))
+                region: $region
             )
             .ignoresSafeArea(edges: .top)
             .background(Color(.systemBackground))
+
+            // 내 위치 버튼 (상단 우측)
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        if let current = currentLocation {
+                            region = MKCoordinateRegion(
+                                center: current.coordinate,
+                                span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002)
+                            )
+                        }
+                    }) {
+                        Image(systemName: "location.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(.blue)
+                            .padding(10)
+                            .background(Color.white.opacity(0.8))
+                            .clipShape(Circle())
+                            .shadow(radius: 2)
+                    }
+                    .padding(.trailing, 8)
+                    Button(action: onClose) {
+                        Image(systemName: "map")
+                            .font(.title2)
+                            .padding(16)
+                            .background(Color(.systemBackground).opacity(0.8))
+                            .clipShape(Circle())
+                    }
+                    .padding(.trailing, 8)
+                }
+                Spacer()
+            }
+            .padding(.top, 40)
 
             // 상단 정보 오버레이
             HStack(spacing: 24) {
@@ -487,23 +523,14 @@ struct MapFullScreenView: View {
             .padding(.top, 40)
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, alignment: .top)
-
-            // 닫기 버튼 (우측 상단)
-            VStack {
-                HStack {
-                    Spacer()
-                    Button(action: onClose) {
-                        Image(systemName: "map")
-                            .font(.title2)
-                            .padding(16)
-                            .background(Color(.systemBackground).opacity(0.8))
-                            .clipShape(Circle())
-                    }
-                    .padding(.trailing, 20)
-                }
-                Spacer()
+        }
+        .onAppear {
+            if let current = currentLocation {
+                region = MKCoordinateRegion(
+                    center: current.coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002)
+                )
             }
-            .padding(.top, 40)
         }
     }
 }

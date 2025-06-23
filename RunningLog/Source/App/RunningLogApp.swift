@@ -17,6 +17,13 @@ struct RunningLogApp: App {
     init() {
         // CoreData store 준비 시작
         _ = persistenceController
+        
+        // TabBar 외형 설정
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = .systemBackground
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
     
     var body: some Scene {

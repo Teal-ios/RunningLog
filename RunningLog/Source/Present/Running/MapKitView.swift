@@ -140,11 +140,16 @@ struct MapKitView: UIViewRepresentable {
             return MKOverlayRenderer(overlay: overlay)
         }
         
-        /// 속도(m/s)를 기반으로 색상을 결정하는 함수
-        /// - 빠름: 초록색
-        /// - 중간: 노란색
-        /// - 느림: 빨간색
+        /// 속도(m/s)를 기반으로 프로젝트 디자인 시스템에 맞는 색상을 결정하는 함수
+        /// - 느림: 밝은 파랑 (accent)
+        /// - 중간: 중간 파랑 (secondary)
+        /// - 빠름: 짙은 파랑 (primary)
         func colorForSpeed(speed: CLLocationSpeed) -> UIColor {
+            // 프로젝트 디자인 시스템 색상을 UIColor로 정의
+            let slowColor = UIColor(red: 161/255, green: 227/255, blue: 249/255, alpha: 0.85) // accent
+            let mediumColor = UIColor(red: 87/255, green: 143/255, blue: 202/255, alpha: 0.85) // secondary
+            let fastColor = UIColor(red: 52/255, green: 116/255, blue: 181/255, alpha: 0.85)   // primary
+
             // m/s 기준 속도 범위 설정 (예: 2 m/s ~ 5 m/s)
             let minSpeed: CLLocationSpeed = 2.0  // 약 7.2 km/h, 8:20 min/km 페이스
             let maxSpeed: CLLocationSpeed = 5.0  // 약 18 km/h, 3:20 min/km 페이스
@@ -153,10 +158,32 @@ struct MapKitView: UIViewRepresentable {
             let clampedSpeed = max(minSpeed, min(speed, maxSpeed))
             let normalizedSpeed = (clampedSpeed - minSpeed) / (maxSpeed - minSpeed)
             
-            // Hue 값을 사용하여 빨강(0.0) -> 노랑 -> 초록(0.33) 그라데이션 생성
-            let hue = CGFloat(normalizedSpeed) * 0.333
+            // 정규화된 속도에 따라 색상 보간
+            if normalizedSpeed < 0.5 {
+                // 0.0 ~ 0.5 구간: slowColor -> mediumColor
+                let t = normalizedSpeed * 2.0
+                return lerp(from: slowColor, to: mediumColor, at: CGFloat(t))
+            } else {
+                // 0.5 ~ 1.0 구간: mediumColor -> fastColor
+                let t = (normalizedSpeed - 0.5) * 2.0
+                return lerp(from: mediumColor, to: fastColor, at: CGFloat(t))
+            }
+        }
+        
+        /// 두 UIColor 사이의 색상을 선형 보간하는 헬퍼 함수
+        private func lerp(from color1: UIColor, to color2: UIColor, at t: CGFloat) -> UIColor {
+            var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+            color1.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
             
-            return UIColor(hue: hue, saturation: 0.9, brightness: 0.9, alpha: 0.85)
+            var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+            color2.getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+            
+            let r = r1 + (r2 - r1) * t
+            let g = g1 + (g2 - g1) * t
+            let b = b1 + (b2 - b1) * t
+            let a = a1 + (a2 - a1) * t
+            
+            return UIColor(red: r, green: g, blue: b, alpha: a)
         }
     }
 } 

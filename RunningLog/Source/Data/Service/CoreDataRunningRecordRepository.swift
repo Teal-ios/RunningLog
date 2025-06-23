@@ -103,7 +103,7 @@ final class CoreDataRunningRecordRepository: RunningRecordRepository {
 
             // 이전 버전과의 호환성을 위한 마이그레이션 로직
             // 1. 새로운 포맷([CLLocation])으로 먼저 디코딩 시도
-            if let decodedPath = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSArray.self, from: pathData) as? [CLLocation] {
+            if let decodedPath = try? NSKeyedUnarchiver.unarchivedObject(ofClasses: [NSArray.self, CLLocation.self], from: pathData) as? [CLLocation] {
                 path = decodedPath
             }
             // 2. 실패 시 이전 포맷([CodableCoordinate])으로 디코딩 시도

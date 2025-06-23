@@ -20,6 +20,7 @@ struct RunningRecordListFeature {
     }
     enum Action {
         case onAppear
+        case loadRecords
         case recordsResponse(Result<[RunningRecord], Error>)
         case selectRecord(RunningRecord)
         case deselectRecord
@@ -40,6 +41,21 @@ struct RunningRecordListFeature {
                     state.isLoading = false
                     return .none
                 }
+            case .loadRecords:
+                state.isLoading = true
+                guard let repository = state.repository else {
+                    state.errorMessage = "기록 데이터베이스가 준비되지 않았습니다."
+                    state.isLoading = false
+                    return .none
+                }
+                return .run { send in
+                    do {
+                        let records = try repository.fetchAll().sorted { $0.startTime < $1.startTime }
+                        await send(.recordsResponse(.success(records)))
+                    } catch {
+                        await send(.recordsResponse(.failure(error)))
+                    }
+                }
             case .repositoryReady:
                 guard let repository = state.repository else {
                     state.errorMessage = "기록 데이터베이스가 준비되지 않았습니다."
@@ -48,7 +64,7 @@ struct RunningRecordListFeature {
                 }
                 return .run { send in
                     do {
-                        let records = try repository.fetchAll().sorted { $0.startTime > $1.startTime }
+                        let records = try repository.fetchAll().sorted { $0.startTime < $1.startTime }
                         await send(.recordsResponse(.success(records)))
                     } catch {
                         await send(.recordsResponse(.failure(error)))

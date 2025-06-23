@@ -14,6 +14,7 @@ struct MapView: View {
         WithViewStore(store, observe: { $0 }) { viewStore in
             ZStack(alignment: .bottom) {
                 MapKitView(
+                    routeID: viewStore.routeID ?? UUID(),
                     locations: viewStore.locations,
                     currentLocation: viewStore.currentLocation,
                     region: $region

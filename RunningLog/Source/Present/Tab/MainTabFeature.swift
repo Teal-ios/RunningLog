@@ -73,11 +73,13 @@ struct MainTabFeature {
                 state.selectedTab = tab
                 return .none
                 
-            case .weather:
-                return .none
-            case .running:
-                return .none
-            case .runningRecordList:
+            case .running(.delegate(let delegateAction)):
+                switch delegateAction {
+                case .runningDidEnd:
+                    return .send(.runningRecordList(.loadRecords))
+                }
+                
+            case .weather, .running, .runningRecordList:
                 return .none
             case .selectTab:
                 return .none

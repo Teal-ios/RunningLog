@@ -9,7 +9,7 @@ struct RunningRecord: Identifiable, Equatable {
     let calories: Double
     let elapsedTime: Double
     let averagePace: Double
-    let path: [CLLocationCoordinate2D]
+    let path: [CLLocation]
     
     static func == (lhs: RunningRecord, rhs: RunningRecord) -> Bool {
         lhs.id == rhs.id &&
@@ -19,10 +19,7 @@ struct RunningRecord: Identifiable, Equatable {
         lhs.calories == rhs.calories &&
         lhs.elapsedTime == rhs.elapsedTime &&
         lhs.averagePace == rhs.averagePace &&
-        lhs.path.count == rhs.path.count &&
-        zip(lhs.path, rhs.path).allSatisfy { l, r in
-            l.latitude == r.latitude && l.longitude == r.longitude
-        }
+        lhs.path == rhs.path
     }
 }
 

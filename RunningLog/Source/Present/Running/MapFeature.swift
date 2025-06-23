@@ -61,6 +61,7 @@ extension DependencyValues {
 struct MapFeature {
     @ObservableState
     struct State: Equatable {
+        var routeID: UUID?
         var locations: [CLLocation] = []
         var currentLocation: CLLocation?
         var isTracking: Bool = false
@@ -90,6 +91,8 @@ struct MapFeature {
             case .startTracking:
                 state.isTracking = true
                 state.errorMessage = nil
+                state.locations = []
+                state.routeID = UUID()
                 kalmanFilterManager.reset()
                 return .run { send in
                     do {
@@ -103,6 +106,7 @@ struct MapFeature {
                 .cancellable(id: CancelID.locationTracking)
             case .stopTracking:
                 state.isTracking = false
+                state.routeID = nil
                 return .cancel(id: CancelID.locationTracking)
             case let .updateLocation(location):
                 print("🟣 MapFeature - updateLocation: \(location.coordinate.latitude), \(location.coordinate.longitude)")

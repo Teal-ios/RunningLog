@@ -47,10 +47,17 @@ final class CoreDataRunningRecordRepository: RunningRecordRepository {
         entity.setValue(record.calories, forKey: "calories")
         entity.setValue(record.elapsedTime, forKey: "elapsedTime")
         entity.setValue(record.averagePace, forKey: "averagePace")
-        // 좌표 배열을 Codable로 변환해 저장
-        let codablePath = record.path.map { CodableCoordinate($0) }
-        let pathData = try JSONEncoder().encode(codablePath)
-        entity.setValue(pathData, forKey: "path")
+        
+        // [CLLocation]을 NSKeyedArchiver를 사용하여 Data로 변환
+        do {
+            let pathData = try NSKeyedArchiver.archivedData(withRootObject: record.path, requiringSecureCoding: true)
+            entity.setValue(pathData, forKey: "path")
+        } catch {
+            print("[CoreData] CLLocation path archiving error: \(error)")
+            // 에러 발생 시 nil 또는 빈 데이터 저장
+            entity.setValue(nil, forKey: "path")
+        }
+        
         print("[CoreData] entity 값 세팅 완료")
         try context.save()
         print("[CoreData] context.save() 완료")
@@ -86,13 +93,29 @@ final class CoreDataRunningRecordRepository: RunningRecordRepository {
                 let calories = calories as? Double,
                 let elapsedTime = elapsedTime as? Double,
                 let averagePace = averagePace as? Double,
-                let pathData = pathData as? Data,
-                let codablePath = try? JSONDecoder().decode([CodableCoordinate].self, from: pathData)
+                let pathData = pathData as? Data
             else {
                 print("[CoreData] guard문 통과 실패, row 스킵")
                 return nil
             }
-            let path = codablePath.map { $0.clLocationCoordinate2D }
+            
+            var path: [CLLocation]
+
+            // 이전 버전과의 호환성을 위한 마이그레이션 로직
+            // 1. 새로운 포맷([CLLocation])으로 먼저 디코딩 시도
+            if let decodedPath = try? NSKeyedUnarchiver.unarchivedObject(ofClasses: [NSArray.self, CLLocation.self], from: pathData) as? [CLLocation] {
+                path = decodedPath
+            }
+            // 2. 실패 시 이전 포맷([CodableCoordinate])으로 디코딩 시도
+            else if let codablePath = try? JSONDecoder().decode([CodableCoordinate].self, from: pathData) {
+                // 이전 포맷의 데이터를 [CLLocation]으로 변환 (속도/시간 정보 없음)
+                path = codablePath.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
+            }
+            // 3. 두 가지 방식 모두 실패하면 빈 배열로 처리
+            else {
+                path = []
+            }
+            
             return RunningRecord(
                 id: id,
                 startTime: startTime,

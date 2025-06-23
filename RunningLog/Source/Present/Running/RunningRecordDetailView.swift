@@ -25,7 +25,8 @@ struct RunningRecordDetailView: View {
             Divider()
             // 하단 지도: PolylineShape → MapKitView로 변경
             MapKitView(
-                locations: record.path.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) },
+                routeID: record.id,
+                locations: record.path,
                 currentLocation: nil,
                 region: $region
             )
@@ -33,7 +34,7 @@ struct RunningRecordDetailView: View {
         }
         .onAppear {
             if let first = record.path.first {
-                region = MKCoordinateRegion(center: first, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
+                region = MKCoordinateRegion(center: first.coordinate, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
             }
         }
     }

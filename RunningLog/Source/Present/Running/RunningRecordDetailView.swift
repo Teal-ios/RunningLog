@@ -1,6 +1,5 @@
 import SwiftUI
 import MapKit
-import RunningLog
 
 struct RunningRecordDetailView: View {
     let record: RunningRecord

@@ -25,6 +25,7 @@ struct RunningView: View {
                 // 2. 전체화면 MapView (오버레이)
                 if isMapPresented {
                     MapFullScreenView(
+                        routeID: viewStore.runID ?? UUID(),
                         locations: viewStore.pathLocations,
                         currentLocation: viewStore.pathLocations.last,
                         onClose: { withAnimation { isMapPresented = false } },
@@ -430,6 +431,8 @@ struct FlipEffect: ViewModifier {
 
 // 전체화면 MapView 오버레이
 struct MapFullScreenView: View {
+    @State private var region = MKCoordinateRegion()
+    let routeID: UUID
     let locations: [CLLocation]
     let currentLocation: CLLocation?
     let onClose: () -> Void
@@ -437,22 +440,18 @@ struct MapFullScreenView: View {
     let pace: Double
     let distance: Double
     
-    @State private var region: MKCoordinateRegion = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
-        span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002)
-    )
-    
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack {
+            // 지도
             MapKitView(
+                routeID: routeID,
                 locations: locations,
                 currentLocation: currentLocation,
                 region: $region
             )
-            .ignoresSafeArea(edges: .top)
-            .background(Color(.systemBackground))
-
-            // 내 위치 버튼 (상단 우측)
+            .edgesIgnoringSafeArea(.all)
+            
+            // UI 요소들
             VStack {
                 HStack {
                     Spacer()

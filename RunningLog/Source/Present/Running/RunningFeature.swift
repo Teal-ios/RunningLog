@@ -15,6 +15,7 @@ struct RunningFeature {
     @ObservableState
     struct State: Equatable {
         var session: RunningSession = RunningSession()
+        var runID: UUID?
         var isLoading = false
         var errorMessage: String?
         var isTimerActive = false
@@ -78,6 +79,7 @@ struct RunningFeature {
                 
                 // 러닝 시작 시 경로 배열도 초기화
                 state.pathLocations = []
+                state.runID = UUID()
                 
                 state.isLoading = true
                 state.session.isActive = true
@@ -141,7 +143,9 @@ struct RunningFeature {
                 state.isTimerActive = false
                 state.isHeartRateTracking = false
                 let session = state.session
-                let path = state.pathLocations.map { $0.coordinate }
+                let path = state.pathLocations
+                state.runID = nil
+                
                 // 값 유효성 체크: 거리, 시간, 경로 모두 있어야 저장
                 guard session.distance > 0, session.elapsedTime > 0, !path.isEmpty else {
                     print("[러닝기록] 거리/시간/경로 값이 없어 저장하지 않음")

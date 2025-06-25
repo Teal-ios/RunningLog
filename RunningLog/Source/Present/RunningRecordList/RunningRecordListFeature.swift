@@ -50,7 +50,7 @@ struct RunningRecordListFeature {
                 }
                 return .run { send in
                     do {
-                        let records = try repository.fetchAll().sorted { $0.startTime < $1.startTime }
+                        let records = try repository.fetchAll().sorted { $0.startTime > $1.startTime }
                         await send(.recordsResponse(.success(records)))
                     } catch {
                         await send(.recordsResponse(.failure(error)))
@@ -64,7 +64,7 @@ struct RunningRecordListFeature {
                 }
                 return .run { send in
                     do {
-                        let records = try repository.fetchAll().sorted { $0.startTime < $1.startTime }
+                        let records = try repository.fetchAll().sorted { $0.startTime > $1.startTime }
                         await send(.recordsResponse(.success(records)))
                     } catch {
                         await send(.recordsResponse(.failure(error)))

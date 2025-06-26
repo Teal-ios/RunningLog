@@ -21,7 +21,9 @@ protocol RunningClient {
     func stopRunning() async throws -> Void
     func updateLocation(_ location: CLLocation) async throws -> Void
     func updateHeartRate(_ heartRate: Int) async throws -> Void
+    func updateElapsedTime(_ elapsedTime: TimeInterval) async throws -> Void
     func getSession() async -> RunningSession?
+    func getLocations() async -> [CLLocation]
     func getUserProfile() async -> UserProfile
     func updateUserProfile(_ profile: UserProfile) async throws -> Void
     func enableBackgroundTracking() async throws -> Void
@@ -259,12 +261,19 @@ class RunningClientImpl: RunningClient {
         print("심박수 수동 업데이트: \(heartRate) bpm")
     }
     
+    func updateElapsedTime(_ elapsedTime: TimeInterval) async throws -> Void {
+        session.elapsedTime = elapsedTime
+        print("러닝 경과시간 업데이트: \(elapsedTime) seconds")
+        updateWidgetData()
+    }
+    
     func getSession() async -> RunningSession? {
-        // 러닝이 활성 상태이고 일시정지가 아닐 때 실시간으로 elapsedTime 계산
-        if session.isActive && !session.isPaused, let startTime = session.startTime {
-            session.elapsedTime = Date().timeIntervalSince(startTime)
-        }
+        // TCA에서 시간을 관리하므로 실시간 계산하지 않음
         return session
+    }
+    
+    func getLocations() async -> [CLLocation] {
+        return locations
     }
     
     func getUserProfile() async -> UserProfile {
@@ -350,12 +359,18 @@ class MockRunningClient: RunningClient {
         print("Mock 심박수 수동 업데이트: \(heartRate) bpm")
     }
     
+    func updateElapsedTime(_ elapsedTime: TimeInterval) async throws -> Void {
+        session.elapsedTime = elapsedTime
+        print("Mock 러닝 경과시간 업데이트: \(elapsedTime) seconds")
+    }
+    
     func getSession() async -> RunningSession? {
-        // 러닝이 활성 상태이고 일시정지가 아닐 때 실시간으로 elapsedTime 계산
-        if session.isActive && !session.isPaused, let startTime = session.startTime {
-            session.elapsedTime = Date().timeIntervalSince(startTime)
-        }
+        // TCA에서 시간을 관리하므로 실시간 계산하지 않음
         return session
+    }
+    
+    func getLocations() async -> [CLLocation] {
+        return []
     }
     
     func getUserProfile() async -> UserProfile {

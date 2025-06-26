@@ -105,27 +105,34 @@ struct RunningFeature {
                 state.session.isActive = true
                 state.session.isPaused = false
                 state.session.startTime = Date()
+                state.session.elapsedTime = 0 // 시간 초기화
                 state.isTimerActive = true
                 state.isHeartRateTracking = true
                 
-                return .run { send in
-                    // Start running session
-                    await send(.runningActionResponse(
-                        Result { try await runningClient.startRunning() }
-                    ))
-                    
-                    // Start location tracking
-                    await send(.startLocationTracking)
-                    
-                    // Start heart rate tracking
-                    await send(.startHeartRateTracking)
-                    
-                    // Start timer
-                    for await _ in clock.timer(interval: .seconds(1)) {
-                        await send(.timerTick)
+                return .concatenate(
+                    // 먼저 기존 타이머들을 모두 취소 (중첩 방지)
+                    .cancel(id: CancelID.timer),
+                    .cancel(id: CancelID.locationTracking),
+                    .cancel(id: CancelID.heartRateTracking),
+                    .run { send in
+                        // Start running session
+                        await send(.runningActionResponse(
+                            Result { try await runningClient.startRunning() }
+                        ))
+                        
+                        // Start location tracking
+                        await send(.startLocationTracking)
+                        
+                        // Start heart rate tracking
+                        await send(.startHeartRateTracking)
+                        
+                        // Start timer
+                        for await _ in clock.timer(interval: .seconds(1)) {
+                            await send(.timerTick)
+                        }
                     }
-                }
-                .cancellable(id: CancelID.timer)
+                    .cancellable(id: CancelID.timer)
+                )
                 
             case .pauseRunning:
                 state.session.isPaused = true
@@ -408,7 +415,13 @@ struct RunningFeature {
                 state.isLoading = false
                 let newState = State() // 상태 초기화
                 state = newState
-                return .send(.delegate(.runningDidEnd))
+                return .concatenate(
+                    // 모든 타이머를 확실히 취소
+                    .cancel(id: CancelID.timer),
+                    .cancel(id: CancelID.locationTracking),
+                    .cancel(id: CancelID.heartRateTracking),
+                    .send(.delegate(.runningDidEnd))
+                )
 
             case .runningRecordSaved(.failure(let error)):
                 state.isLoading = false

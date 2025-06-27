@@ -25,6 +25,8 @@ struct RunningRecordListFeature {
         case selectRecord(RunningRecord)
         case deselectRecord
         case repositoryReady
+        case deleteRecord(RunningRecord)
+        case deleteRecordResponse(Result<Void, Error>)
     }
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -84,6 +86,28 @@ struct RunningRecordListFeature {
                 return .none
             case .deselectRecord:
                 state.selectedRecord = nil
+                return .none
+            case let .deleteRecord(record):
+                state.isLoading = true
+                guard let repository = state.repository else {
+                    state.errorMessage = "기록 데이터베이스가 준비되지 않았습니다."
+                    state.isLoading = false
+                    return .none
+                }
+                return .run { send in
+                    do {
+                        try repository.delete(record: record)
+                        await send(.deleteRecordResponse(.success(())))
+                    } catch {
+                        await send(.deleteRecordResponse(.failure(error)))
+                    }
+                }
+            case let .deleteRecordResponse(.success):
+                state.isLoading = false
+                return .send(.loadRecords)
+            case let .deleteRecordResponse(.failure(error)):
+                state.isLoading = false
+                state.errorMessage = error.localizedDescription
                 return .none
             }
         }

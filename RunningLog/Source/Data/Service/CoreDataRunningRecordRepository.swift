@@ -128,4 +128,20 @@ final class CoreDataRunningRecordRepository: RunningRecordRepository {
             )
         }
     }
+    
+    func delete(record: RunningRecord) throws {
+        print("[CoreData] delete() 진입, record id: \(record.id)")
+        let request = NSFetchRequest<NSFetchRequestResult>(entityName: "RunningRecordEntity")
+        request.predicate = NSPredicate(format: "id == %@", record.id as CVarArg)
+        
+        let results = try context.fetch(request) as! [NSManagedObject]
+        
+        for object in results {
+            context.delete(object)
+            print("[CoreData] 객체 삭제: \(object)")
+        }
+        
+        try context.save()
+        print("[CoreData] delete context.save() 완료")
+    }
 } 

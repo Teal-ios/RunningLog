@@ -22,6 +22,13 @@ struct RunningRecordListView: View {
                         }
                         .padding(.vertical, 8)
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            viewStore.send(.deleteRecord(record))
+                        } label: {
+                            Label("삭제", systemImage: "trash")
+                        }
+                    }
                 }
                 .navigationTitle("러닝 기록")
                 .onAppear { viewStore.send(.onAppear) }

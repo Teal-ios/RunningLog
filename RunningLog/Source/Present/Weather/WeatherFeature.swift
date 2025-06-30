@@ -19,11 +19,13 @@ struct WeatherFeature {
         var location: String = "대한민국"
         var latitude: Double? = nil
         var longitude: Double? = nil
+        var hasLoadedInitialData = false  // 초기 데이터 로드 완료 여부
         var recordList: RunningRecordListFeature.State = .init()
     }
     
     enum Action {
         case onAppear
+        case loadInitialData
         case refreshWeather
         case weatherResponse(Result<WeatherData, Error>)
         case updateLocation(latitude: Double, longitude: Double, address: String)
@@ -37,7 +39,16 @@ struct WeatherFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .onAppear, .refreshWeather:
+            case .onAppear:
+                // 이미 초기 데이터를 로드했으면 새로 가져오지 않음
+                if state.hasLoadedInitialData {
+                    return .none
+                } else {
+                    // 첫 실행이면 초기 로딩 시작
+                    return .send(.loadInitialData)
+                }
+                
+            case .loadInitialData, .refreshWeather:
                 print("[WeatherFeature] locationClient 인스턴스 주소: \(Unmanaged.passUnretained(locationClient as AnyObject).toOpaque())")
                 state.isLoading = true
                 state.errorMessage = nil
@@ -73,6 +84,7 @@ struct WeatherFeature {
                 state.isLoading = false
                 state.weatherData = weatherData
                 state.errorMessage = nil
+                state.hasLoadedInitialData = true  // 초기 데이터 로드 완료 표시
                 return .none
             case let .weatherResponse(.failure(error)):
                 state.isLoading = false

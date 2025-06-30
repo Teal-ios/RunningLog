@@ -24,10 +24,12 @@ struct WeatherView: View {
             }
             .background(Color(UIColor.systemGroupedBackground))
             .onAppear {
+                // 앱 첫 실행시에만 데이터를 로드하고, 이후에는 캐시된 데이터 사용
                 store.send(.onAppear)
                 store.send(.recordList(.onAppear))
             }
             .refreshable {
+                // Pull-to-refresh시에만 강제로 새로운 데이터 가져오기
                 store.send(.refreshWeather)
                 store.send(.recordList(.onAppear))
             }

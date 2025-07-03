@@ -89,7 +89,7 @@ struct RunningView: View {
             // MapView 제거 (상단에 항상 보이지 않음)
             // 에러 메시지 (있을 경우)
             if let errorMessage = viewStore.errorMessage {
-                Text(LocalizedStringKey("error_prefix") + Text(errorMessage))
+                Text(NSLocalizedString("error_prefix", comment: "") + errorMessage)
                     .font(.caption)
                     .foregroundColor(.red)
                     .padding(.horizontal)

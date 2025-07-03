@@ -53,7 +53,7 @@ struct WeatherView: View {
     }
     
     private func errorView(errorMessage: String) -> some View {
-        Text(LocalizedStringKey("error_prefix") + Text(errorMessage))
+        Text(NSLocalizedString("error_prefix", comment: "") + errorMessage)
             .foregroundColor(.red)
             .frame(height: 200)
     }

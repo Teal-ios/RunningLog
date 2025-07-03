@@ -84,8 +84,8 @@ struct LineChartView: View {
     
     private func shortDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "M/d"
+        formatter.locale = Locale.current
+        formatter.dateFormat = NSLocalizedString("date_format_short", comment: "")
         return formatter.string(from: date)
     }
 }

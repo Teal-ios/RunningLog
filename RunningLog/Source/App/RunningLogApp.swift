@@ -37,7 +37,7 @@ struct RunningLogApp: App {
                 } else {
                     VStack {
                         Spacer()
-                        ProgressView("데이터베이스를 준비 중입니다...")
+                        ProgressView("loading_database")
                             .progressViewStyle(CircularProgressViewStyle())
                             .padding()
                         Spacer()

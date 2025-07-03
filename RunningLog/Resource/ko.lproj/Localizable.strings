@@ -1,0 +1,78 @@
+// MARK: - 공통
+"error_prefix" = "오류: ";
+"loading_database" = "데이터베이스를 준비 중입니다...";
+"cancel" = "취소";
+"delete" = "삭제";
+"start" = "시작";
+"restart" = "재시작";
+"pause" = "일시정지";
+"stop" = "정지";
+"save_and_stop" = "저장하고 종료";
+
+// MARK: - 에러 메시지
+"database_not_ready" = "기록 데이터베이스가 준비되지 않았습니다.";
+"database_not_ready_wait" = "기록 데이터베이스가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.";
+
+// MARK: - 탭 제목
+"tab_weather" = "날씨";
+"tab_running" = "러닝";
+"tab_record" = "기록";
+
+// MARK: - 날씨 화면
+"weather_loading" = "날씨 정보를 불러오는 중...";
+"realtime_weather" = "실시간 기상 정보";
+"weather_based_on" = " 기준";
+"hourly_forecast" = "시간별 기상 예보";
+"recent_running_distance" = "최근 러닝 거리";
+
+// MARK: - 러닝 화면
+"running_time" = "러닝 시간";
+"distance" = "거리";
+"calories" = "칼로리";
+"pace" = "페이스";
+"heart_rate" = "심박수";
+"time" = "시간";
+
+// MARK: - 러닝 상태
+"status_running" = "러닝 중";
+"status_paused" = "일시정지됨";
+"status_waiting" = "대기 중";
+"status_standby" = "대기";
+"location_tracking" = "위치 추적 중";
+"heart_rate_connected" = "심박수 연결됨";
+"heart_rate_waiting" = "심박수 대기 중";
+"heart_rate_measuring" = "심박수 측정 중...";
+"heart_rate_start_info" = "러닝 시작 시 심박수 측정";
+"running_continues_message" = "탭을 전환해도 러닝이 계속됩니다";
+
+// MARK: - 심박수 구간
+"heart_zone_rest" = "휴식";
+"heart_zone_fat_burn" = "지방연소";
+"heart_zone_aerobic" = "유산소";
+"heart_zone_anaerobic" = "무산소";
+"heart_zone_max" = "최고강도";
+
+// MARK: - 러닝 종료 알림
+"stop_running_title" = "러닝 종료";
+"stop_running_message" = "러닝을 종료하고 기록을 저장하시겠습니까?";
+
+// MARK: - 러닝 기록
+"running_records" = "러닝 기록";
+
+// MARK: - 단위
+"unit_km" = "km";
+"unit_kcal" = "kcal";
+"unit_min_per_km" = "분/km";
+"unit_bpm" = "bpm";
+"unit_ms" = "m/s";
+"unit_percent" = "%";
+
+// MARK: - 위젯
+"widget_name" = "러닝 위젯";
+"widget_description" = "러닝 세션의 실시간 정보를 확인하고 제어할 수 있습니다.";
+
+// MARK: - 날짜 형식 (DateFormatter 대체)
+"date_format_month_day" = "M월 d일";
+"date_format_month_day_time" = "M월 d일 HH:mm";
+"date_format_short" = "M/d";
+"date_format_with_weekday" = "M/d(E)"; 

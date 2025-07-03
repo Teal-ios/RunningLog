@@ -1,0 +1,78 @@
+// MARK: - Common
+"error_prefix" = "Error: ";
+"loading_database" = "Preparing database...";
+"cancel" = "Cancel";
+"delete" = "Delete";
+"start" = "Start";
+"restart" = "Restart";
+"pause" = "Pause";
+"stop" = "Stop";
+"save_and_stop" = "Save & Stop";
+
+// MARK: - Error Messages
+"database_not_ready" = "Running records database is not ready.";
+"database_not_ready_wait" = "Running records database is not ready yet. Please try again in a moment.";
+
+// MARK: - Tab Titles
+"tab_weather" = "Weather";
+"tab_running" = "Running";
+"tab_record" = "Records";
+
+// MARK: - Weather Screen
+"weather_loading" = "Loading weather information...";
+"realtime_weather" = "Real-time Weather";
+"weather_based_on" = " as of";
+"hourly_forecast" = "Hourly Forecast";
+"recent_running_distance" = "Recent Running Distance";
+
+// MARK: - Running Screen
+"running_time" = "Running Time";
+"distance" = "Distance";
+"calories" = "Calories";
+"pace" = "Pace";
+"heart_rate" = "Heart Rate";
+"time" = "Time";
+
+// MARK: - Running Status
+"status_running" = "Running";
+"status_paused" = "Paused";
+"status_waiting" = "Waiting";
+"status_standby" = "Standby";
+"location_tracking" = "Location Tracking";
+"heart_rate_connected" = "Heart Rate Connected";
+"heart_rate_waiting" = "Heart Rate Waiting";
+"heart_rate_measuring" = "Measuring heart rate...";
+"heart_rate_start_info" = "Heart rate monitoring when running starts";
+"running_continues_message" = "Running continues even when switching tabs";
+
+// MARK: - Heart Rate Zones
+"heart_zone_rest" = "Rest";
+"heart_zone_fat_burn" = "Fat Burn";
+"heart_zone_aerobic" = "Aerobic";
+"heart_zone_anaerobic" = "Anaerobic";
+"heart_zone_max" = "Max";
+
+// MARK: - Stop Running Alert
+"stop_running_title" = "Stop Running";
+"stop_running_message" = "Would you like to stop running and save the record?";
+
+// MARK: - Running Records
+"running_records" = "Running Records";
+
+// MARK: - Units
+"unit_km" = "km";
+"unit_kcal" = "kcal";
+"unit_min_per_km" = "min/km";
+"unit_bpm" = "bpm";
+"unit_ms" = "m/s";
+"unit_percent" = "%";
+
+// MARK: - Widget
+"widget_name" = "Running Widget";
+"widget_description" = "Monitor and control real-time running session information.";
+
+// MARK: - Date Formats (DateFormatter replacement)
+"date_format_month_day" = "MMM d";
+"date_format_month_day_time" = "MMM d, HH:mm";
+"date_format_short" = "M/d";
+"date_format_with_weekday" = "M/d(E)"; 

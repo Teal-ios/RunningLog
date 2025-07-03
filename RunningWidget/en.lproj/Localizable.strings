@@ -1,0 +1,9 @@
+// MARK: - Widget Specific
+"status_running" = "Running";
+"status_standby" = "Standby";
+"distance" = "Distance";
+"calories" = "Calories";
+"unit_km" = "km";
+"unit_kcal" = "kcal";
+"widget_name" = "Running Widget";
+"widget_description" = "Monitor and control real-time running session information."; 

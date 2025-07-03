@@ -39,14 +39,14 @@ struct RunningRecordListFeature {
                     return .send(.repositoryReady)
                 } else {
                     print("[기록탭] store 미준비, 로딩 안내")
-                    state.errorMessage = "기록 데이터베이스가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요."
+                    state.errorMessage = NSLocalizedString("database_not_ready_wait", comment: "")
                     state.isLoading = false
                     return .none
                 }
             case .loadRecords:
                 state.isLoading = true
                 guard let repository = state.repository else {
-                    state.errorMessage = "기록 데이터베이스가 준비되지 않았습니다."
+                    state.errorMessage = NSLocalizedString("database_not_ready", comment: "")
                     state.isLoading = false
                     return .none
                 }
@@ -60,7 +60,7 @@ struct RunningRecordListFeature {
                 }
             case .repositoryReady:
                 guard let repository = state.repository else {
-                    state.errorMessage = "기록 데이터베이스가 준비되지 않았습니다."
+                    state.errorMessage = NSLocalizedString("database_not_ready", comment: "")
                     state.isLoading = false
                     return .none
                 }
@@ -90,7 +90,7 @@ struct RunningRecordListFeature {
             case let .deleteRecord(record):
                 state.isLoading = true
                 guard let repository = state.repository else {
-                    state.errorMessage = "기록 데이터베이스가 준비되지 않았습니다."
+                    state.errorMessage = NSLocalizedString("database_not_ready", comment: "")
                     state.isLoading = false
                     return .none
                 }

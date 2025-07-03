@@ -37,7 +37,7 @@
 		B7CD52FC2DE44628008B6D4F /* Exceptions for "RunningLog" folder in "RunningLog" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				Resource/Info.plist,
 			);
 			target = B7CD52A82DDEDD8F008B6D4F /* RunningLog */;
 		};
@@ -211,6 +211,8 @@
 			knownRegions = (
 				en,
 				Base,
+				ko,
+				ja,
 			);
 			mainGroup = B7CD52A02DDEDD8F008B6D4F;
 			minimizedProjectReferenceProxies = 1;
@@ -419,11 +421,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = RunningLog/RunningLog.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.2.1;
+				CURRENT_PROJECT_VERSION = 1.2.2;
 				DEVELOPMENT_TEAM = LL4R66V6Y3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = RunningLog/Info.plist;
+				INFOPLIST_FILE = RunningLog/Resource/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RunningLog;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "이 앱은 러닝 중 심박수 정보를 읽어와서 운동 강도를 모니터링합니다.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "이 앱은 러닝 데이터를 Health 앱에 저장합니다.";
@@ -439,7 +441,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.1;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = den.RunningLog;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -459,11 +461,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = RunningLog/RunningLog.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.2.1;
+				CURRENT_PROJECT_VERSION = 1.2.2;
 				DEVELOPMENT_TEAM = LL4R66V6Y3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = RunningLog/Info.plist;
+				INFOPLIST_FILE = RunningLog/Resource/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RunningLog;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "이 앱은 러닝 중 심박수 정보를 읽어와서 운동 강도를 모니터링합니다.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "이 앱은 러닝 데이터를 Health 앱에 저장합니다.";
@@ -479,7 +481,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.1;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = den.RunningLog;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

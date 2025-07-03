@@ -38,10 +38,10 @@ struct RunningView: View {
                 // 3. 커스텀 정지 Alert
                 if isStopAlertPresented {
                     CustomAlertView(
-                        title: "러닝 종료",
-                        message: "러닝을 종료하고 기록을 저장하시겠습니까?",
-                        confirmTitle: "저장하고 종료",
-                        cancelTitle: "취소",
+                        title: NSLocalizedString("stop_running_title", comment: ""),
+                        message: NSLocalizedString("stop_running_message", comment: ""),
+                        confirmTitle: NSLocalizedString("save_and_stop", comment: ""),
+                        cancelTitle: NSLocalizedString("cancel", comment: ""),
                         onConfirm: {
                             isStopAlertPresented = false
                             viewStore.send(.stopRunning)
@@ -89,7 +89,7 @@ struct RunningView: View {
             // MapView 제거 (상단에 항상 보이지 않음)
             // 에러 메시지 (있을 경우)
             if let errorMessage = viewStore.errorMessage {
-                Text("오류: \(errorMessage)")
+                Text(NSLocalizedString("error_prefix", comment: "") + errorMessage)
                     .font(.caption)
                     .foregroundColor(.red)
                     .padding(.horizontal)
@@ -100,7 +100,7 @@ struct RunningView: View {
                 Spacer()
                 heartRateDisplay(heartRate: viewStore.session.heartRate, isActive: viewStore.session.isActive)
                 VStack(spacing: 8) {
-                    Text("러닝 시간")
+                    Text("running_time")
                         .font(.headline)
                         .foregroundColor(.secondary)
                     Text(viewStore.session.formattedTime)
@@ -109,21 +109,21 @@ struct RunningView: View {
                 }
                 HStack(spacing: 40) {
                     StatItem(
-                        title: "거리",
+                        title: NSLocalizedString("distance", comment: ""),
                         value: String(format: "%.2f", viewStore.session.distance / 1000),
-                        unit: "km"
+                        unit: NSLocalizedString("unit_km", comment: "")
                     )
                     StatItem(
-                        title: "칼로리",
+                        title: NSLocalizedString("calories", comment: ""),
                         value: "\(Int(viewStore.session.calories))",
-                        unit: "kcal"
+                        unit: NSLocalizedString("unit_kcal", comment: "")
                     )
                     StatItem(
-                        title: "페이스",
+                        title: NSLocalizedString("pace", comment: ""),
                         value: viewStore.session.currentPace > 0
                             ? String(format: "%.2f", viewStore.session.currentPace)
                             : "--.--",
-                        unit: "분/km"
+                        unit: NSLocalizedString("unit_min_per_km", comment: "")
                     )
                 }
                 Spacer()
@@ -151,7 +151,7 @@ struct RunningView: View {
                         value: isActive
                     )
                 
-                Text("심박수")
+                Text("heart_rate")
                     .font(.headline)
                     .foregroundColor(.secondary)
             }
@@ -163,7 +163,7 @@ struct RunningView: View {
                     .foregroundColor(heartRateColor(for: heartRate))
                     .contentTransition(.numericText(value: Double(heartRate)))
                 
-                Text("bpm")
+                Text("unit_bpm")
                     .font(.title3)
                     .foregroundColor(.secondary)
                     .offset(y: -8)
@@ -173,12 +173,12 @@ struct RunningView: View {
             if heartRate > 0 {
                 heartRateZoneIndicator(for: heartRate)
             } else if isActive {
-                Text("심박수 측정 중...")
+                Text("heart_rate_measuring")
                     .font(.caption)
                     .foregroundColor(.orange)
                     .opacity(0.7)
             } else {
-                Text("러닝 시작 시 심박수 측정")
+                Text("heart_rate_start_info")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .opacity(0.7)
@@ -233,15 +233,15 @@ struct RunningView: View {
     private func getHeartRateZone(for heartRate: Int) -> (name: String, color: Color) {
         switch heartRate {
         case 1..<90:
-            return ("휴식", .blue)
+            return (NSLocalizedString("heart_zone_rest", comment: ""), .blue)
         case 90..<120:
-            return ("지방연소", .green)
+            return (NSLocalizedString("heart_zone_fat_burn", comment: ""), .green)
         case 120..<150:
-            return ("유산소", .yellow)
+            return (NSLocalizedString("heart_zone_aerobic", comment: ""), .yellow)
         case 150..<180:
-            return ("무산소", .orange)
+            return (NSLocalizedString("heart_zone_anaerobic", comment: ""), .orange)
         default:
-            return ("최고강도", .red)
+            return (NSLocalizedString("heart_zone_max", comment: ""), .red)
         }
     }
     
@@ -255,7 +255,7 @@ struct RunningView: View {
                 .frame(width: 8, height: 8)
             
             Text(state.session.isActive ? 
-                 (state.session.isPaused ? "일시정지됨" : "러닝 중") : "대기 중")
+                 (state.session.isPaused ? "status_paused" : "status_running") : "status_waiting")
                 .font(.caption)
                 .foregroundColor(.secondary)
             
@@ -265,7 +265,7 @@ struct RunningView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "location")
                         .foregroundColor(.blue)
-                    Text("위치 추적 중")
+                    Text("location_tracking")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -276,7 +276,7 @@ struct RunningView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "heart")
                         .foregroundColor(state.session.heartRate > 0 ? .red : .gray)
-                    Text(state.session.heartRate > 0 ? "심박수 연결됨" : "심박수 대기 중")
+                    Text(state.session.heartRate > 0 ? "heart_rate_connected" : "heart_rate_waiting")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -294,7 +294,7 @@ struct RunningView: View {
             Image(systemName: "figure.run")
                 .foregroundColor(.green)
             
-            Text("탭을 전환해도 러닝이 계속됩니다")
+            Text("running_continues_message")
                 .font(.caption)
                 .foregroundColor(.secondary)
             
@@ -331,13 +331,13 @@ struct RunningView: View {
     // MARK: - 컨트롤 버튼
     @ViewBuilder
     private func controlButtons(for viewStore: ViewStore<RunningFeature.State, RunningFeature.Action>) -> some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             if !viewStore.session.isActive {
                 // 시작 버튼
                 Button(action: { viewStore.send(.startRunning) }) {
                     HStack {
                         Image(systemName: "play.fill")
-                        Text("러닝 시작")
+                        Text("start")
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -349,11 +349,11 @@ struct RunningView: View {
                 .disabled(viewStore.isLoading)
             } else {
                 if viewStore.session.isPaused {
-                    // 재개 버튼
+                    // 재시작 버튼
                     Button(action: { viewStore.send(.resumeRunning) }) {
                         HStack {
                             Image(systemName: "play.fill")
-                            Text("재개")
+                            Text("restart")
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -367,7 +367,7 @@ struct RunningView: View {
                     Button(action: { viewStore.send(.pauseRunning) }) {
                         HStack {
                             Image(systemName: "pause.fill")
-                            Text("일시정지")
+                            Text("pause")
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -381,7 +381,7 @@ struct RunningView: View {
                 Button(action: { isStopAlertPresented = true }) {
                     HStack {
                         Image(systemName: "stop.fill")
-                        Text("정지")
+                        Text("stop")
                     }
                     .frame(maxWidth: .infinity)
                     .padding()

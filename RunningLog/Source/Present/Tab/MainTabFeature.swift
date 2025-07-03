@@ -26,11 +26,11 @@ struct MainTabFeature {
         var title: String {
             switch self {
             case .weather:
-                return "날씨"
+                return NSLocalizedString("tab_weather", comment: "")
             case .running:
-                return "러닝"
+                return NSLocalizedString("tab_running", comment: "")
             case .record:
-                return "기록"
+                return NSLocalizedString("tab_record", comment: "")
             }
         }
         

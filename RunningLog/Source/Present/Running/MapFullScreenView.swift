@@ -29,7 +29,7 @@ struct MapFullScreenView: View {
                 HStack(spacing: 24) {
                     // 타이머
                     VStack(spacing: 2) {
-                        Text("시간")
+                        Text("time")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         Text(runningTime)
@@ -38,7 +38,7 @@ struct MapFullScreenView: View {
                     }
                     // 페이스
                     VStack(spacing: 2) {
-                        Text("페이스")
+                        Text("pace")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         Text(pace > 0 ? String(format: "%.2f", pace) : "--.--")
@@ -47,10 +47,10 @@ struct MapFullScreenView: View {
                     }
                     // 거리
                     VStack(spacing: 2) {
-                        Text("거리")
+                        Text("distance")
                             .font(.caption2)
                             .foregroundColor(.secondary)
-                        Text(String(format: "%.2f km", distance / 1000))
+                        Text(String(format: "%.2f " + NSLocalizedString("unit_km", comment: ""), distance / 1000))
                             .font(.headline)
                             .foregroundColor(Color.primary)
                     }

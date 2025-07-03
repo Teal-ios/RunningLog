@@ -48,12 +48,12 @@ struct WeatherView: View {
     }
     
     private var loadingView: some View {
-        ProgressView("날씨 정보를 불러오는 중...")
+        ProgressView("weather_loading")
             .frame(height: 200)
     }
     
     private func errorView(errorMessage: String) -> some View {
-        Text("오류: \(errorMessage)")
+        Text(LocalizedStringKey("error_prefix") + Text(errorMessage))
             .foregroundColor(.red)
             .frame(height: 200)
     }
@@ -95,11 +95,11 @@ struct WeatherView: View {
     private func currentWeatherView(weatherData: WeatherData) -> some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack {
-                Text("실시간 기상 정보")
+                Text("realtime_weather")
                     .font(.headline)
                     .fontWeight(.medium)
                 Spacer()
-                Text(getCurrentTimeString() + " 기준")
+                Text(getCurrentTimeString() + NSLocalizedString("weather_based_on", comment: ""))
                     .font(.caption)
                     .foregroundColor(.gray)
             }
@@ -167,7 +167,7 @@ struct WeatherView: View {
     
     private func hourlyForecastView(weatherData: WeatherData) -> some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("시간별 기상 예보")
+            Text("hourly_forecast")
                 .font(.headline)
                 .fontWeight(.medium)
             
@@ -231,8 +231,8 @@ struct WeatherView: View {
     // Helper functions
     private func getDateString(for index: Int) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "M/d(E)"
-        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = NSLocalizedString("date_format_with_weekday", comment: "")
+        formatter.locale = Locale.current
         
         let date = Calendar.current.date(byAdding: .day, value: index, to: Date()) ?? Date()
         return formatter.string(from: date)
@@ -295,15 +295,15 @@ struct WeatherView: View {
     
     private func getCurrentTimeString() -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "M월 d일 HH:mm"
+        formatter.locale = Locale.current
+        formatter.dateFormat = NSLocalizedString("date_format_month_day_time", comment: "")
         return formatter.string(from: Date())
     }
     
     private func getDateStringForHourly(date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "M월 d일"
+        formatter.locale = Locale.current
+        formatter.dateFormat = NSLocalizedString("date_format_month_day", comment: "")
         return formatter.string(from: date)
     }
     
@@ -357,7 +357,7 @@ struct RecentRunningChartSection: View {
     var body: some View {
         if !records.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                Text("최근 러닝 거리")
+                Text("recent_running_distance")
                     .font(.headline)
                     .fontWeight(.medium)
                 LineChartView(records: records)

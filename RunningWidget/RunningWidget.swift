@@ -81,7 +81,7 @@ struct RunningWidgetEntryView: View {
             // 상단: 상태와 시간
             HStack {
                 VStack(alignment: .leading) {
-                    Text(entry.isRunning ? "러닝 중" : "대기")
+                    Text(entry.isRunning ? NSLocalizedString("status_running", comment: "") : NSLocalizedString("status_standby", comment: ""))
                         .font(.caption)
                         .foregroundColor(entry.isRunning ? .green : .gray)
                     
@@ -102,13 +102,13 @@ struct RunningWidgetEntryView: View {
             // 하단: 거리와 칼로리
             HStack {
                 VStack {
-                    Text("거리")
+                    Text("distance")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     HStack(alignment: .firstTextBaseline, spacing: 1) {
                         Text(entry.distance)
                             .font(.system(size: 16, weight: .semibold))
-                        Text("km")
+                        Text("unit_km")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -117,13 +117,13 @@ struct RunningWidgetEntryView: View {
                 Spacer()
                 
                 VStack {
-                    Text("칼로리")
+                    Text("calories")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     HStack(alignment: .firstTextBaseline, spacing: 1) {
                         Text(entry.calories)
                             .font(.system(size: 16, weight: .semibold))
-                        Text("kcal")
+                        Text("unit_kcal")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -144,8 +144,8 @@ struct RunningWidget: Widget {
         StaticConfiguration(kind: kind, provider: RunningTimelineProvider()) { entry in
             RunningWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("러닝 위젯")
-        .description("러닝 세션의 실시간 정보를 확인하고 제어할 수 있습니다.")
+        .configurationDisplayName("widget_name")
+        .description("widget_description")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

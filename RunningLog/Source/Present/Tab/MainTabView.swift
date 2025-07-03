@@ -49,7 +49,7 @@ struct MainTabView: View {
                 // 기록 탭
                 RunningRecordListView(store: store.scope(state: \ .runningRecordList, action: MainTabFeature.Action.runningRecordList))
                     .tabItem {
-                        Label("기록", systemImage: "list.bullet")
+                        Label("tab_record", systemImage: "list.bullet")
                     }
                     .tag(MainTabFeature.Tab.record)
             }

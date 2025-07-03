@@ -26,11 +26,11 @@ struct RunningRecordListView: View {
                         Button(role: .destructive) {
                             viewStore.send(.deleteRecord(record))
                         } label: {
-                            Label("삭제", systemImage: "trash")
+                            Label("delete", systemImage: "trash")
                         }
                     }
                 }
-                .navigationTitle("러닝 기록")
+                .navigationTitle("running_records")
                 .onAppear { viewStore.send(.onAppear) }
                 .sheet(item: Binding(
                     get: { viewStore.selectedRecord },

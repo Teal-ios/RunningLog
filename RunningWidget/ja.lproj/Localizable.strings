@@ -1,0 +1,9 @@
+// MARK: - Widget Specific
+"status_running" = "ランニング中";
+"status_standby" = "待機";
+"distance" = "距離";
+"calories" = "カロリー";
+"unit_km" = "km";
+"unit_kcal" = "kcal";
+"widget_name" = "ランニングウィジェット";
+"widget_description" = "ランニングセッションのリアルタイム情報を確認・制御できます。"; 

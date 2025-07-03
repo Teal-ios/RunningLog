@@ -1,0 +1,78 @@
+// MARK: - 共通
+"error_prefix" = "エラー: ";
+"loading_database" = "データベースを準備中...";
+"cancel" = "キャンセル";
+"delete" = "削除";
+"start" = "開始";
+"restart" = "再開";
+"pause" = "一時停止";
+"stop" = "停止";
+"save_and_stop" = "保存して終了";
+
+// MARK: - エラーメッセージ
+"database_not_ready" = "ランニング記録データベースの準備ができていません。";
+"database_not_ready_wait" = "ランニング記録データベースの準備がまだ完了していません。しばらくしてからもう一度お試しください。";
+
+// MARK: - タブタイトル
+"tab_weather" = "天気";
+"tab_running" = "ランニング";
+"tab_record" = "記録";
+
+// MARK: - 天気画面
+"weather_loading" = "天気情報を読み込み中...";
+"realtime_weather" = "リアルタイム天気";
+"weather_based_on" = " 現在";
+"hourly_forecast" = "時間別天気予報";
+"recent_running_distance" = "最近のランニング距離";
+
+// MARK: - ランニング画面
+"running_time" = "ランニング時間";
+"distance" = "距離";
+"calories" = "カロリー";
+"pace" = "ペース";
+"heart_rate" = "心拍数";
+"time" = "時間";
+
+// MARK: - ランニング状態
+"status_running" = "ランニング中";
+"status_paused" = "一時停止中";
+"status_waiting" = "待機中";
+"status_standby" = "待機";
+"location_tracking" = "位置追跡中";
+"heart_rate_connected" = "心拍数接続済み";
+"heart_rate_waiting" = "心拍数待機中";
+"heart_rate_measuring" = "心拍数測定中...";
+"heart_rate_start_info" = "ランニング開始時に心拍数を測定";
+"running_continues_message" = "タブを切り替えてもランニングは継続されます";
+
+// MARK: - 心拍数ゾーン
+"heart_zone_rest" = "安静";
+"heart_zone_fat_burn" = "脂肪燃焼";
+"heart_zone_aerobic" = "有酸素";
+"heart_zone_anaerobic" = "無酸素";
+"heart_zone_max" = "最大強度";
+
+// MARK: - ランニング終了アラート
+"stop_running_title" = "ランニング終了";
+"stop_running_message" = "ランニングを終了して記録を保存しますか？";
+
+// MARK: - ランニング記録
+"running_records" = "ランニング記録";
+
+// MARK: - 単位
+"unit_km" = "km";
+"unit_kcal" = "kcal";
+"unit_min_per_km" = "分/km";
+"unit_bpm" = "bpm";
+"unit_ms" = "m/s";
+"unit_percent" = "%";
+
+// MARK: - ウィジェット
+"widget_name" = "ランニングウィジェット";
+"widget_description" = "ランニングセッションのリアルタイム情報を確認・制御できます。";
+
+// MARK: - 日付フォーマット
+"date_format_month_day" = "M月d日";
+"date_format_month_day_time" = "M月d日 HH:mm";
+"date_format_short" = "M/d";
+"date_format_with_weekday" = "M/d(E)"; 

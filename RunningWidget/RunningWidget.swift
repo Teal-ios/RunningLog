@@ -7,7 +7,7 @@
 
 import WidgetKit
 import SwiftUI
-import Intents
+import AppIntents
 
 // MARK: - Timeline Provider
 struct RunningTimelineProvider: TimelineProvider {
@@ -33,19 +33,18 @@ struct RunningTimelineProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        // 현재 러닝 세션 정보를 가져와서 타임라인 생성
         let currentDate = Date()
         let entry = getCurrentRunningEntry(date: currentDate)
         
-        // 1분마다 업데이트
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 1, to: currentDate)!
+        // 러닝 중이면 10초마다, 대기 중이면 1분마다 업데이트
+        let updateInterval: TimeInterval = entry.isRunning ? 10 : 60
+        let nextUpdate = Calendar.current.date(byAdding: .second, value: Int(updateInterval), to: currentDate)!
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         
         completion(timeline)
     }
     
     private func getCurrentRunningEntry(date: Date) -> RunningEntry {
-        // UserDefaults나 App Groups를 통해 앱에서 공유된 데이터 읽기
         let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
         
         let isRunning = sharedDefaults?.bool(forKey: "isRunning") ?? false
@@ -75,8 +74,56 @@ struct RunningEntry: TimelineEntry {
 // MARK: - Widget View
 struct RunningWidgetEntryView: View {
     var entry: RunningTimelineProvider.Entry
+    @Environment(\.widgetFamily) var family
 
     var body: some View {
+        switch family {
+        case .systemSmall:
+            smallWidgetView
+        case .systemMedium:
+            mediumWidgetView
+        default:
+            smallWidgetView
+        }
+    }
+    
+    // Small Widget View
+    private var smallWidgetView: some View {
+        VStack(spacing: 8) {
+            // 상태와 시간
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry.isRunning ? NSLocalizedString("status_running", comment: "") : NSLocalizedString("status_standby", comment: ""))
+                    .font(.caption2)
+                    .foregroundColor(entry.isRunning ? .green : .gray)
+                
+                Text(entry.time)
+                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                    .minimumScaleFactor(0.8)
+            }
+            
+            Spacer()
+            
+            // 거리
+            VStack(spacing: 2) {
+                Text("distance")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
+                    Text(entry.distance)
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("unit_km")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
+        .widgetURL(URL(string: "runninglog://widget-tap"))
+    }
+    
+    // Medium Widget View
+    private var mediumWidgetView: some View {
         VStack(spacing: 12) {
             // 상단: 상태와 시간
             HStack {
@@ -91,8 +138,15 @@ struct RunningWidgetEntryView: View {
                 
                 Spacer()
                 
-                // 재생/정지 버튼
-                Button(intent: ToggleRunningIntent()) {
+                // 재생/정지 버튼 (iOS 17+ AppIntent 지원)
+                if #available(iOS 17.0, *) {
+                    Button(intent: ToggleRunningIntent()) {
+                        Image(systemName: entry.isRunning ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(entry.isRunning ? .orange : .green)
+                    }
+                    .buttonStyle(.plain)
+                } else {
                     Image(systemName: entry.isRunning ? "pause.circle.fill" : "play.circle.fill")
                         .font(.system(size: 32))
                         .foregroundColor(entry.isRunning ? .orange : .green)
@@ -131,8 +185,7 @@ struct RunningWidgetEntryView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .widgetURL(URL(string: "runninglog://widget-tap"))
     }
 }
 
@@ -143,6 +196,7 @@ struct RunningWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: RunningTimelineProvider()) { entry in
             RunningWidgetEntryView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("widget_name")
         .description("widget_description")
@@ -150,7 +204,8 @@ struct RunningWidget: Widget {
     }
 }
 
-// MARK: - App Intent
+// MARK: - App Intent (iOS 17+)
+@available(iOS 17.0, *)
 struct ToggleRunningIntent: AppIntent {
     static var title: LocalizedStringResource = "러닝 토글"
     static var description = IntentDescription("러닝을 시작하거나 일시정지합니다.")
@@ -180,5 +235,12 @@ struct ToggleRunningIntent: AppIntent {
         distance: "3.12",
         time: "00:27:03",
         calories: "245"
+    )
+    RunningEntry(
+        date: Date().addingTimeInterval(300),
+        isRunning: false,
+        distance: "5.47",
+        time: "00:45:12",
+        calories: "380"
     )
 } 

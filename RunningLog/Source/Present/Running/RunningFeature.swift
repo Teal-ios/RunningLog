@@ -22,6 +22,8 @@ struct RunningFeature {
         var isLocationTrackingActive = false
         var isHeartRateTracking = false
         var pathLocations: [CLLocation] = []
+        var lastWidgetAction: String? = nil // 위젯 액션 추적
+        var lastWidgetActionTime: TimeInterval = 0 // 위젯 액션 타임스탬프
     }
     
     enum Action {
@@ -44,6 +46,7 @@ struct RunningFeature {
         case stopHeartRateTracking
         case saveRunningRecord(RunningRecord)
         case runningRecordSaved(Result<Void, Error>)
+        case checkWidgetAction // 위젯 액션 체크
         case delegate(Delegate)
         
         enum Delegate {
@@ -60,6 +63,7 @@ struct RunningFeature {
         case timer
         case locationTracking
         case heartRateTracking
+        case widgetActionChecker // 위젯 액션 체크 타이머
     }
     
     var body: some ReducerOf<Self> {
@@ -67,31 +71,40 @@ struct RunningFeature {
             switch action {
             case .onAppear:
                 print("[RunningFeature] locationClient 인스턴스 주소: \(Unmanaged.passUnretained(locationClient as AnyObject).toOpaque())")
-                return .run { send in
-                    // 현재 세션 상태와 위치 정보 동기화
-                    if let currentSession = await runningClient.getSession() {
-                        await send(.sessionResponse(.success(currentSession)))
-                        
-                        // 저장된 위치 정보를 직접 동기화 (거리 계산 중복 방지)
-                        let savedLocations = await runningClient.getLocations()
-                        await send(.syncLocations(savedLocations))
-                        
-                        // 세션이 활성 상태(러닝 중)라면 위치 추적 및 타이머 재시작
-                        if currentSession.isActive && !currentSession.isPaused {
-                            await send(.startLocationTracking)
-                            await send(.timerTick)
-                        } else if !currentSession.isActive {
-                            // 세션이 비활성 상태라면 모든 추적을 확실히 중지
+                return .concatenate(
+                    .run { send in
+                        // 현재 세션 상태와 위치 정보 동기화
+                        if let currentSession = await runningClient.getSession() {
+                            await send(.sessionResponse(.success(currentSession)))
+                            
+                            // 저장된 위치 정보를 직접 동기화 (거리 계산 중복 방지)
+                            let savedLocations = await runningClient.getLocations()
+                            await send(.syncLocations(savedLocations))
+                            
+                            // 세션이 활성 상태(러닝 중)라면 위치 추적 및 타이머 재시작
+                            if currentSession.isActive && !currentSession.isPaused {
+                                await send(.startLocationTracking)
+                                await send(.timerTick)
+                            } else if !currentSession.isActive {
+                                // 세션이 비활성 상태라면 모든 추적을 확실히 중지
+                                await send(.stopLocationTracking)
+                                await send(.stopHeartRateTracking)
+                            }
+                        } else {
+                            await send(.sessionResponse(.success(nil)))
+                            // 세션이 없다면 모든 추적을 확실히 중지
                             await send(.stopLocationTracking)
                             await send(.stopHeartRateTracking)
                         }
-                    } else {
-                        await send(.sessionResponse(.success(nil)))
-                        // 세션이 없다면 모든 추적을 확실히 중지
-                        await send(.stopLocationTracking)
-                        await send(.stopHeartRateTracking)
+                    },
+                    // 위젯 액션 체크 타이머 시작
+                    .run { send in
+                        for await _ in clock.timer(interval: .seconds(1)) {
+                            await send(.checkWidgetAction)
+                        }
                     }
-                }
+                    .cancellable(id: CancelID.widgetActionChecker)
+                )
                 
             case .startRunning:
                 // 이미 활성 상태인 세션은 재시작하지 않음
@@ -248,8 +261,8 @@ struct RunningFeature {
                     // RunningClient와 시간 동기화
                     let currentTime = state.session.elapsedTime
                     
-                    // 10초마다 위젯 데이터 업데이트
-                    if Int(state.session.elapsedTime) % 10 == 0 {
+                    // 5초마다 위젯 데이터 업데이트
+                    if Int(state.session.elapsedTime) % 5 == 0 {
                         let formattedTime = state.session.formattedTime
                         return .run { send in
                             // RunningClient와 시간 동기화
@@ -262,7 +275,7 @@ struct RunningFeature {
                             WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
                         }
                     } else {
-                        // 10초가 아닐 때도 RunningClient와 시간 동기화
+                        // 5초가 아닐 때도 RunningClient와 시간 동기화
                         return .run { send in
                             try? await runningClient.updateElapsedTime(currentTime)
                         }
@@ -426,6 +439,52 @@ struct RunningFeature {
             case .runningRecordSaved(.failure(let error)):
                 state.isLoading = false
                 state.errorMessage = "기록 저장 실패: \(error.localizedDescription)"
+                return .none
+                
+            case .checkWidgetAction:
+                // 위젯에서 설정한 액션 확인
+                let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
+                guard let widgetAction = sharedDefaults?.string(forKey: "widgetAction") else {
+                    return .none
+                }
+                
+                // 타임스탬프 기반 중복 처리 방지
+                let widgetActionTime = sharedDefaults?.double(forKey: "widgetActionTime") ?? 0
+                guard widgetActionTime > state.lastWidgetActionTime else {
+                    return .none
+                }
+                
+                print("[RunningFeature] 위젯 액션 감지: \(widgetAction) (타임스탬프: \(widgetActionTime))")
+                state.lastWidgetAction = widgetAction
+                state.lastWidgetActionTime = widgetActionTime
+                
+                // 위젯 액션 처리 시작 - 즉시 제거하여 중복 실행 방지
+                sharedDefaults?.removeObject(forKey: "widgetAction")
+                sharedDefaults?.removeObject(forKey: "widgetActionTime")
+                
+                switch widgetAction {
+                case "start":
+                    if !state.session.isActive {
+                        print("[RunningFeature] 위젯에서 러닝 시작 요청")
+                        return .send(.startRunning)
+                    } else if state.session.isPaused {
+                        print("[RunningFeature] 위젯에서 러닝 재개 요청")
+                        return .send(.resumeRunning)
+                    }
+                case "pause":
+                    if state.session.isActive && !state.session.isPaused {
+                        print("[RunningFeature] 위젯에서 러닝 일시정지 요청")
+                        return .send(.pauseRunning)
+                    }
+                case "stop":
+                    if state.session.isActive {
+                        print("[RunningFeature] 위젯에서 러닝 정지 요청")
+                        return .send(.stopRunning)
+                    }
+                default:
+                    break
+                }
+                
                 return .none
                 
             case .delegate:

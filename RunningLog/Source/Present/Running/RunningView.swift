@@ -57,7 +57,7 @@ struct RunningView: View {
             .onAppear {
                 viewStore.send(.onAppear)
             }
-            .onChange(of: scenePhase) { newPhase in
+            .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .background || newPhase == .inactive {
                     // 백그라운드/잠금 진입 시 위치 추적 유지
                     if viewStore.session.isActive && !viewStore.session.isPaused {

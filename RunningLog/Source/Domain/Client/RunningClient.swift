@@ -173,6 +173,8 @@ class RunningClientImpl: RunningClient {
         sharedDefaults?.set(session.formattedTime, forKey: "time")
         sharedDefaults?.set(session.formattedCalories, forKey: "calories")
         
+        print("[RunningClient] 위젯 데이터 업데이트: 러닝=\(session.isActive && !session.isPaused), 거리=\(session.formattedDistance)km")
+        
         // 위젯 타임라인 업데이트 요청
         WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
     }

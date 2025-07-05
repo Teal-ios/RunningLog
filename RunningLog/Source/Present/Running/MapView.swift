@@ -77,7 +77,7 @@ struct MapView: View {
                     )
                 }
             }
-            .onChange(of: viewStore.currentLocation) { loc in
+            .onChange(of: viewStore.currentLocation) { _, loc in
                 if let loc = loc {
                     region = MKCoordinateRegion(
                         center: loc.coordinate,

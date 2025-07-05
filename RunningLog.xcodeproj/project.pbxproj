@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		B7CD52E12DDEDDCC008B6D4F /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = B7CD52E02DDEDDCC008B6D4F /* ComposableArchitecture */; };
+		D9B5CE68C66847788766BE9B8C167533 /* RunningWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = CECFBDAB1B0844F397C3778D73E87B05 /* RunningWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -24,6 +25,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = B7CD52A82DDEDD8F008B6D4F;
 			remoteInfo = RunningLog;
+		};
+		07C5433CE7614487903E9A4EDBF486BD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B7CD52A12DDEDD8F008B6D4F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BBE02D041DB3492E951F64416F47A3AD;
+			remoteInfo = RunningWidget;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -145,10 +153,12 @@
 				B7CD52A52DDEDD8F008B6D4F /* Sources */,
 				B7CD52A62DDEDD8F008B6D4F /* Frameworks */,
 				B7CD52A72DDEDD8F008B6D4F /* Resources */,
+				D9B5CE68C66847788766BE9B8C167532 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				07C5433CE7614487903E9A4EDBF486BE /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				B7CD52AB2DDEDD8F008B6D4F /* RunningLog */,
@@ -351,6 +361,11 @@
 			isa = PBXTargetDependency;
 			target = B7CD52A82DDEDD8F008B6D4F /* RunningLog */;
 			targetProxy = B7CD52C12DDEDD90008B6D4F /* PBXContainerItemProxy */;
+		};
+		07C5433CE7614487903E9A4EDBF486BE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BBE02D041DB3492E951F64416F47A3AD /* RunningWidget */;
+			targetProxy = 07C5433CE7614487903E9A4EDBF486BD /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -762,6 +777,20 @@
 			productName = ComposableArchitecture;
 		};
 /* End XCSwiftPackageProductDependency section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D9B5CE68C66847788766BE9B8C167532 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				D9B5CE68C66847788766BE9B8C167533 /* RunningWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 	};
 	rootObject = B7CD52A12DDEDD8F008B6D4F /* Project object */;
 }

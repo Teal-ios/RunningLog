@@ -52,6 +52,13 @@ struct RunningTimelineProvider: TimelineProvider {
         let time = sharedDefaults?.string(forKey: "time") ?? "00:00:00"
         let calories = sharedDefaults?.string(forKey: "calories") ?? "0"
         
+        // 위젯 액션이 처리되지 않은 경우 감지
+        let pendingAction = sharedDefaults?.string(forKey: "widgetAction")
+        let actionTime = sharedDefaults?.double(forKey: "widgetActionTime") ?? 0
+        let isActionPending = pendingAction != nil && (Date().timeIntervalSince1970 - actionTime) < 10 // 10초 이내
+        
+        print("[Widget] 위젯 데이터 업데이트: 러닝=\(isRunning), 대기액션=\(pendingAction ?? "없음"), 대기중=\(isActionPending)")
+        
         return RunningEntry(
             date: date,
             isRunning: isRunning,
@@ -140,12 +147,24 @@ struct RunningWidgetEntryView: View {
                 
                 // 재생/정지 버튼 (iOS 17+ AppIntent 지원)
                 if #available(iOS 17.0, *) {
-                    Button(intent: ToggleRunningIntent()) {
-                        Image(systemName: entry.isRunning ? "pause.circle.fill" : "play.circle.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(entry.isRunning ? .orange : .green)
+                    HStack(spacing: 8) {
+                        Button(intent: ToggleRunningIntent()) {
+                            Image(systemName: entry.isRunning ? "pause.circle.fill" : "play.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(entry.isRunning ? .orange : .green)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // 러닝 중일 때만 정지 버튼 표시
+                        if entry.isRunning {
+                            Button(intent: StopRunningIntent()) {
+                                Image(systemName: "stop.circle.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundColor(.red)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.plain)
                 } else {
                     Image(systemName: entry.isRunning ? "pause.circle.fill" : "play.circle.fill")
                         .font(.system(size: 32))
@@ -215,10 +234,45 @@ struct ToggleRunningIntent: AppIntent {
         let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
         let isRunning = sharedDefaults?.bool(forKey: "isRunning") ?? false
         
-        // 상태 토글
-        sharedDefaults?.set(!isRunning, forKey: "isRunning")
+        // 현재 상태에 따라 적절한 액션 설정
+        let action = isRunning ? "pause" : "start"
         
-        // 위젯 업데이트 요청
+        // 메인 앱에 액션 전달
+        sharedDefaults?.set(action, forKey: "widgetAction")
+        
+        // 위젯 액션 타임스탬프 설정 (중복 처리 방지)
+        sharedDefaults?.set(Date().timeIntervalSince1970, forKey: "widgetActionTime")
+        
+        print("[Widget] 위젯 액션 전달: \(action)")
+        
+        // 위젯 업데이트 요청 (상태 변경 없이 UI만 업데이트)
+        WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
+        
+        return .result()
+    }
+}
+
+@available(iOS 17.0, *)
+struct StopRunningIntent: AppIntent {
+    static var title: LocalizedStringResource = "러닝 정지"
+    static var description = IntentDescription("러닝을 정지합니다.")
+    
+    func perform() async throws -> some IntentResult {
+        // UserDefaults를 통해 앱과 통신
+        let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
+        
+        // 러닝 정지 액션 설정
+        let action = "stop"
+        
+        // 메인 앱에 액션 전달
+        sharedDefaults?.set(action, forKey: "widgetAction")
+        
+        // 위젯 액션 타임스탬프 설정 (중복 처리 방지)
+        sharedDefaults?.set(Date().timeIntervalSince1970, forKey: "widgetActionTime")
+        
+        print("[Widget] 위젯 정지 액션 전달: \(action)")
+        
+        // 위젯 업데이트 요청 (상태 변경 없이 UI만 업데이트)
         WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
         
         return .result()

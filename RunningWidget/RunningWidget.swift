@@ -17,7 +17,8 @@ struct RunningTimelineProvider: TimelineProvider {
             isRunning: false,
             distance: "0.00",
             time: "00:00:00",
-            calories: "0"
+            calories: "0",
+            pace: "--'--\""
         )
     }
 
@@ -27,7 +28,8 @@ struct RunningTimelineProvider: TimelineProvider {
             isRunning: true,
             distance: "3.12",
             time: "00:27:03",
-            calories: "245"
+            calories: "245",
+            pace: "5'23\""
         )
         completion(entry)
     }
@@ -64,16 +66,18 @@ struct RunningTimelineProvider: TimelineProvider {
         let distance = sharedDefaults?.string(forKey: "distance") ?? "0.00"
         let time = sharedDefaults?.string(forKey: "time") ?? "00:00:00"
         let calories = sharedDefaults?.string(forKey: "calories") ?? "0"
+        let pace = sharedDefaults?.string(forKey: "pace") ?? "--'--\""
         
         // 디버깅을 위한 로그
-        print("[Widget] 상태 업데이트: 러닝=\(isRunning), 시간=\(time), 거리=\(distance)km")
+        print("[Widget] 상태 업데이트: 러닝=\(isRunning), 시간=\(time), 거리=\(distance)km, 페이스=\(pace)")
         
         return RunningEntry(
             date: date,
             isRunning: isRunning,
             distance: distance,
             time: time,
-            calories: calories
+            calories: calories,
+            pace: pace
         )
     }
 }
@@ -85,6 +89,7 @@ struct RunningEntry: TimelineEntry {
     let distance: String
     let time: String
     let calories: String
+    let pace: String
 }
 
 // MARK: - Widget View
@@ -105,7 +110,7 @@ struct RunningWidgetEntryView: View {
     
     // Small Widget View
     private var smallWidgetView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             // 상태와 시간
             VStack(alignment: .leading, spacing: 4) {
                 Text(entry.isRunning ? NSLocalizedString("status_running", comment: "") : NSLocalizedString("status_standby", comment: ""))
@@ -113,23 +118,36 @@ struct RunningWidgetEntryView: View {
                     .foregroundColor(entry.isRunning ? .green : .gray)
                 
                 Text(entry.time)
-                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
                     .minimumScaleFactor(0.8)
             }
             
             Spacer()
             
-            // 거리
-            VStack(spacing: 2) {
-                Text("distance")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text(entry.distance)
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("unit_km")
+            // 거리와 페이스
+            HStack {
+                VStack(spacing: 2) {
+                    Text("distance")
                         .font(.caption2)
                         .foregroundColor(.secondary)
+                    HStack(alignment: .firstTextBaseline, spacing: 1) {
+                        Text(entry.distance)
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("unit_km")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                VStack(spacing: 2) {
+                    Text("pace")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text(entry.pace)
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundColor(entry.isRunning ? .primary : .secondary)
                 }
             }
         }
@@ -169,7 +187,7 @@ struct RunningWidgetEntryView: View {
                 }
             }
             
-            // 하단: 거리와 칼로리
+            // 하단: 거리, 칼로리, 페이스
             HStack {
                 VStack {
                     Text("distance")
@@ -177,11 +195,22 @@ struct RunningWidgetEntryView: View {
                         .foregroundColor(.secondary)
                     HStack(alignment: .firstTextBaseline, spacing: 1) {
                         Text(entry.distance)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                         Text("unit_km")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
+                }
+                
+                Spacer()
+                
+                VStack {
+                    Text("pace")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text(entry.pace)
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .foregroundColor(entry.isRunning ? .primary : .secondary)
                 }
                 
                 Spacer()
@@ -192,7 +221,7 @@ struct RunningWidgetEntryView: View {
                         .foregroundColor(.secondary)
                     HStack(alignment: .firstTextBaseline, spacing: 1) {
                         Text(entry.calories)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                         Text("unit_kcal")
                             .font(.caption2)
                             .foregroundColor(.secondary)
@@ -258,13 +287,15 @@ struct ToggleRunningIntent: AppIntent {
         isRunning: true,
         distance: "3.12",
         time: "00:27:03",
-        calories: "245"
+        calories: "245",
+        pace: "5'23\""
     )
     RunningEntry(
         date: Date().addingTimeInterval(300),
         isRunning: false,
         distance: "5.47",
         time: "00:45:12",
-        calories: "380"
+        calories: "380",
+        pace: "6'12\""
     )
 } 

@@ -173,9 +173,10 @@ class RunningClientImpl: RunningClient {
         sharedDefaults?.set(session.formattedDistance, forKey: "distance")
         sharedDefaults?.set(session.formattedTime, forKey: "time")
         sharedDefaults?.set(session.formattedCalories, forKey: "calories")
+        sharedDefaults?.set(session.formattedPace, forKey: "pace")
         
         // 위젯 상태 변경 로그
-        print("[RunningClient] 위젯 상태 업데이트: 러닝=\(currentIsRunning), 시간=\(session.formattedTime), 거리=\(session.formattedDistance)km, 칼로리=\(session.formattedCalories)kcal")
+        print("[RunningClient] 위젯 상태 업데이트: 러닝=\(currentIsRunning), 시간=\(session.formattedTime), 거리=\(session.formattedDistance)km, 칼로리=\(session.formattedCalories)kcal, 페이스=\(session.formattedPace)")
         
         // 위젯 타임라인 즉시 업데이트 요청
         WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")

@@ -134,6 +134,7 @@ struct RunningFeature {
                         sharedDefaults?.set("00:00:00", forKey: "time")
                         sharedDefaults?.set("0.00", forKey: "distance")
                         sharedDefaults?.set("0", forKey: "calories")
+                        sharedDefaults?.set("--'--\"", forKey: "pace")
                         
                         print("[RunningFeature] 러닝 시작 - 위젯 상태 즉시 업데이트")
                         WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
@@ -301,6 +302,7 @@ struct RunningFeature {
                     // 3초마다 위젯 데이터 업데이트 (더 자주 업데이트)
                     if Int(state.session.elapsedTime) % 3 == 0 {
                         let formattedTime = state.session.formattedTime
+                        let formattedPace = state.session.formattedPace
                         return .run { send in
                             // RunningClient와 시간 동기화
                             try? await runningClient.updateElapsedTime(currentTime)
@@ -308,9 +310,10 @@ struct RunningFeature {
                             // 위젯 데이터 즉시 업데이트
                             let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
                             sharedDefaults?.set(formattedTime, forKey: "time")
+                            sharedDefaults?.set(formattedPace, forKey: "pace")
                             sharedDefaults?.set(true, forKey: "isRunning") // 러닝 중 상태 확실히 설정
                             
-                            print("[RunningFeature] 위젯 데이터 업데이트: 시간=\(formattedTime)")
+                            print("[RunningFeature] 위젯 데이터 업데이트: 시간=\(formattedTime), 페이스=\(formattedPace)")
                             
                             WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
                         }

@@ -127,6 +127,18 @@ struct RunningFeature {
                     .cancel(id: CancelID.timer),
                     .cancel(id: CancelID.locationTracking),
                     .cancel(id: CancelID.heartRateTracking),
+                    // 위젯 상태 즉시 업데이트
+                    .run { send in
+                        let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
+                        sharedDefaults?.set(true, forKey: "isRunning")
+                        sharedDefaults?.set("00:00:00", forKey: "time")
+                        sharedDefaults?.set("0.00", forKey: "distance")
+                        sharedDefaults?.set("0", forKey: "calories")
+                        sharedDefaults?.set("--'--\"", forKey: "pace")
+                        
+                        print("[RunningFeature] 러닝 시작 - 위젯 상태 즉시 업데이트")
+                        WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
+                    },
                     .run { send in
                         // Start running session
                         await send(.runningActionResponse(
@@ -152,6 +164,14 @@ struct RunningFeature {
                 state.isTimerActive = false
                 
                 return .concatenate(
+                    // 위젯 상태 즉시 업데이트
+                    .run { send in
+                        let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
+                        sharedDefaults?.set(false, forKey: "isRunning")
+                        
+                        print("[RunningFeature] 러닝 일시정지 - 위젯 상태 즉시 업데이트")
+                        WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
+                    },
                     .run { send in
                         await send(.runningActionResponse(
                             Result { try await runningClient.pauseRunning() }
@@ -164,17 +184,27 @@ struct RunningFeature {
                 state.session.isPaused = false
                 state.isTimerActive = true
                 
-                return .run { send in
-                    await send(.runningActionResponse(
-                        Result { try await runningClient.resumeRunning() }
-                    ))
-                    
-                    // Resume timer
-                    for await _ in clock.timer(interval: .seconds(1)) {
-                        await send(.timerTick)
+                return .concatenate(
+                    // 위젯 상태 즉시 업데이트
+                    .run { send in
+                        let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
+                        sharedDefaults?.set(true, forKey: "isRunning")
+                        
+                        print("[RunningFeature] 러닝 재개 - 위젯 상태 즉시 업데이트")
+                        WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
+                    },
+                    .run { send in
+                        await send(.runningActionResponse(
+                            Result { try await runningClient.resumeRunning() }
+                        ))
+                        
+                        // Resume timer
+                        for await _ in clock.timer(interval: .seconds(1)) {
+                            await send(.timerTick)
+                        }
                     }
-                }
-                .cancellable(id: CancelID.timer)
+                    .cancellable(id: CancelID.timer)
+                )
                 
             case .stopRunning:
                 state.isLoading = true
@@ -195,6 +225,14 @@ struct RunningFeature {
                     .cancel(id: CancelID.timer),
                     .cancel(id: CancelID.locationTracking),
                     .cancel(id: CancelID.heartRateTracking),
+                    // 위젯 상태 즉시 업데이트
+                    .run { send in
+                        let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
+                        sharedDefaults?.set(false, forKey: "isRunning")
+                        
+                        print("[RunningFeature] 러닝 정지 - 위젯 상태 즉시 업데이트")
+                        WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
+                    },
                     .run { [record] send in
                         // 모든 추적을 중지
                         await send(.stopHeartRateTracking)
@@ -261,21 +299,26 @@ struct RunningFeature {
                     // RunningClient와 시간 동기화
                     let currentTime = state.session.elapsedTime
                     
-                    // 5초마다 위젯 데이터 업데이트
-                    if Int(state.session.elapsedTime) % 5 == 0 {
+                    // 3초마다 위젯 데이터 업데이트 (더 자주 업데이트)
+                    if Int(state.session.elapsedTime) % 3 == 0 {
                         let formattedTime = state.session.formattedTime
+                        let formattedPace = state.session.formattedPace
                         return .run { send in
                             // RunningClient와 시간 동기화
                             try? await runningClient.updateElapsedTime(currentTime)
                             
-                            // 위젯 데이터 업데이트 요청
+                            // 위젯 데이터 즉시 업데이트
                             let sharedDefaults = UserDefaults(suiteName: "group.den.RunningLog.shared")
                             sharedDefaults?.set(formattedTime, forKey: "time")
+                            sharedDefaults?.set(formattedPace, forKey: "pace")
+                            sharedDefaults?.set(true, forKey: "isRunning") // 러닝 중 상태 확실히 설정
+                            
+                            print("[RunningFeature] 위젯 데이터 업데이트: 시간=\(formattedTime), 페이스=\(formattedPace)")
                             
                             WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
                         }
                     } else {
-                        // 5초가 아닐 때도 RunningClient와 시간 동기화
+                        // 3초가 아닐 때도 RunningClient와 시간 동기화
                         return .run { send in
                             try? await runningClient.updateElapsedTime(currentTime)
                         }
@@ -476,12 +519,8 @@ struct RunningFeature {
                         print("[RunningFeature] 위젯에서 러닝 일시정지 요청")
                         return .send(.pauseRunning)
                     }
-                case "stop":
-                    if state.session.isActive {
-                        print("[RunningFeature] 위젯에서 러닝 정지 요청")
-                        return .send(.stopRunning)
-                    }
                 default:
+                    print("[RunningFeature] 알 수 없는 위젯 액션: \(widgetAction)")
                     break
                 }
                 

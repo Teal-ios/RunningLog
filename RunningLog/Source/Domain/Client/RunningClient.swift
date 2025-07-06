@@ -168,15 +168,22 @@ class RunningClientImpl: RunningClient {
     }
     
     private func updateWidgetData() {
-        sharedDefaults?.set(session.isActive && !session.isPaused, forKey: "isRunning")
+        let currentIsRunning = session.isActive && !session.isPaused
+        sharedDefaults?.set(currentIsRunning, forKey: "isRunning")
         sharedDefaults?.set(session.formattedDistance, forKey: "distance")
         sharedDefaults?.set(session.formattedTime, forKey: "time")
         sharedDefaults?.set(session.formattedCalories, forKey: "calories")
         
-        print("[RunningClient] 위젯 데이터 업데이트: 러닝=\(session.isActive && !session.isPaused), 거리=\(session.formattedDistance)km")
+        // 위젯 상태 변경 로그
+        print("[RunningClient] 위젯 상태 업데이트: 러닝=\(currentIsRunning), 시간=\(session.formattedTime), 거리=\(session.formattedDistance)km, 칼로리=\(session.formattedCalories)kcal")
         
-        // 위젯 타임라인 업데이트 요청
+        // 위젯 타임라인 즉시 업데이트 요청
         WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
+        
+        // 추가적으로 0.5초 후에도 한 번 더 업데이트 (지연 반영 방지)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
+        }
     }
     
     func startRunning() async throws -> Void {
@@ -191,19 +198,26 @@ class RunningClientImpl: RunningClient {
         lastLocation = nil
         isUsingRealHeartRate = false
         print("러닝 시작: \(Date())")
+        
+        // 즉시 위젯 업데이트
         updateWidgetData()
+        
         startHeartRateMonitoring()
     }
     
     func pauseRunning() async throws -> Void {
         session.isPaused = true
         print("러닝 일시정지")
+        
+        // 즉시 위젯 업데이트
         updateWidgetData()
     }
     
     func resumeRunning() async throws -> Void {
         session.isPaused = false
         print("러닝 재개")
+        
+        // 즉시 위젯 업데이트
         updateWidgetData()
     }
     
@@ -218,7 +232,10 @@ class RunningClientImpl: RunningClient {
             session.averagePace = timeInMinutes / distanceInKm
         }
         session.calculateCalories(userProfile: userProfile)
+        
+        // 즉시 위젯 업데이트
         updateWidgetData()
+        
         stopHeartRateMonitoring()
     }
     

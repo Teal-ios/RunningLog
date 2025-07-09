@@ -7,8 +7,8 @@ struct RunningRecordListView: View {
         WithViewStore(store, observe: { $0 }) { viewStore in
             NavigationStack {
                 List(viewStore.records) { record in
-                    Button {
-                        viewStore.send(.selectRecord(record))
+                    NavigationLink {
+                        RunningRecordDetailView(record: record)
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
@@ -32,12 +32,6 @@ struct RunningRecordListView: View {
                 }
                 .navigationTitle("running_records")
                 .onAppear { viewStore.send(.onAppear) }
-                .sheet(item: Binding(
-                    get: { viewStore.selectedRecord },
-                    set: { _ in viewStore.send(.deselectRecord) }
-                )) { record in
-                    RunningRecordDetailView(record: record)
-                }
             }
         }
     }

@@ -9,21 +9,17 @@ struct RunningRecordListFeature {
         var records: [RunningRecord] = []
         var isLoading = false
         var errorMessage: String?
-        var selectedRecord: RunningRecord?
         var repository: RunningRecordRepository? = nil
         static func == (lhs: State, rhs: State) -> Bool {
             lhs.records == rhs.records &&
             lhs.isLoading == rhs.isLoading &&
-            lhs.errorMessage == rhs.errorMessage &&
-            lhs.selectedRecord == rhs.selectedRecord
+            lhs.errorMessage == rhs.errorMessage
         }
     }
     enum Action {
         case onAppear
         case loadRecords
         case recordsResponse(Result<[RunningRecord], Error>)
-        case selectRecord(RunningRecord)
-        case deselectRecord
         case repositoryReady
         case deleteRecord(RunningRecord)
         case deleteRecordResponse(Result<Void, Error>)
@@ -58,20 +54,10 @@ struct RunningRecordListFeature {
                         await send(.recordsResponse(.failure(error)))
                     }
                 }
+            
             case .repositoryReady:
-                guard let repository = state.repository else {
-                    state.errorMessage = NSLocalizedString("database_not_ready", comment: "")
-                    state.isLoading = false
-                    return .none
-                }
-                return .run { send in
-                    do {
-                        let records = try repository.fetchAll().sorted { $0.startTime > $1.startTime }
-                        await send(.recordsResponse(.success(records)))
-                    } catch {
-                        await send(.recordsResponse(.failure(error)))
-                    }
-                }
+                return .send(.loadRecords)
+            
             case let .recordsResponse(.success(records)):
                 state.records = records
                 state.isLoading = false
@@ -80,12 +66,6 @@ struct RunningRecordListFeature {
             case let .recordsResponse(.failure(error)):
                 state.isLoading = false
                 state.errorMessage = error.localizedDescription
-                return .none
-            case let .selectRecord(record):
-                state.selectedRecord = record
-                return .none
-            case .deselectRecord:
-                state.selectedRecord = nil
                 return .none
             case let .deleteRecord(record):
                 state.isLoading = true
@@ -102,7 +82,7 @@ struct RunningRecordListFeature {
                         await send(.deleteRecordResponse(.failure(error)))
                     }
                 }
-            case let .deleteRecordResponse(.success):
+            case .deleteRecordResponse(.success):
                 state.isLoading = false
                 return .send(.loadRecords)
             case let .deleteRecordResponse(.failure(error)):

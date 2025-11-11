@@ -50,7 +50,7 @@ struct OnboardingCardView: View {
 
 struct OnboardingView: View {
     @State private var currentPage = 0
-    
+    let onCompletion: () -> Void
     let pages: [OnboardingData] = [
         OnboardingData(
             iconName: "waveform.path.ecg",
@@ -75,8 +75,8 @@ struct OnboardingView: View {
     // 주황색 그라데이션 배경 정의
     let backgroundGradient = LinearGradient(
         gradient: Gradient(colors: [
-            Color.gradientOrange,  // 아주 연한 주황색
-            Color.white // 연한 베이지/흰색
+            Color.gradientOrange,
+            Color.white
         ]),
         startPoint: .top,
         endPoint: .bottom
@@ -88,7 +88,8 @@ struct OnboardingView: View {
                 currentPage += 1
             }
         } else {
-            print("온보딩 완료. 메인 화면으로 이동합니다.")
+            print("시작하기 버튼 눌림")
+            onCompletion()
         }
     }
     
@@ -146,6 +147,6 @@ struct OnboardingView: View {
 // MARK: - 미리보기 (Preview)
 struct CustomOnboardingView_Previews: PreviewProvider {
     static var previews: some View {
-        OnboardingView()
+        OnboardingView(){ }
     }
 }

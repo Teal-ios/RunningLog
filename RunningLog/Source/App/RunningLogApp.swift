@@ -33,12 +33,9 @@ struct RunningLogApp: App {
         WindowGroup {
             Group {
                 if let isFirstLaunch = isFirstLaunch {
-                    if isFirstLaunch {
+                    if !isFirstLaunch {
                         if isStoreLoaded {
-                            MainTabView(store: Store(initialState: MainTabFeature.State(), reducer: {
-                                MainTabFeature()
-                            }))
-                            .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                            mainContentView()
                         } else {
                             VStack {
                                 Spacer()
@@ -49,8 +46,19 @@ struct RunningLogApp: App {
                             }
                         }
                     } else {
-                        OnboardingView()
-                    }
+                        OnboardingView(onCompletion: {
+                            // 1. 상태 업데이트 (MainTabView로 전환)
+                            self.isFirstLaunch = false
+                            
+                            // 2. UserDefaults에 완료 기록 저장 (다음 실행부터 건너뛰도록)
+                            Task {
+                                do {
+                                    try userDefaultsClient.save(false, forKey: "firstLaunch")
+                                } catch {
+                                    print("Error saving firstLaunch state: \(error)")
+                                }
+                            }
+                        })                    }
                 }
                 
             }
@@ -83,6 +91,14 @@ struct RunningLogApp: App {
                 }
             }
         }
+    }
+    
+    @ViewBuilder
+    private func mainContentView() -> some View {
+        MainTabView(store: Store(initialState: MainTabFeature.State(), reducer: {
+            MainTabFeature()
+        }))
+        .environment(\.managedObjectContext, persistenceController.container.viewContext)
     }
 }
 

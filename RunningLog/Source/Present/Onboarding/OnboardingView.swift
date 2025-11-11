@@ -48,7 +48,7 @@ struct OnboardingCardView: View {
     }
 }
 
-struct CustomOnboardingView: View {
+struct OnboardingView: View {
     @State private var currentPage = 0
     
     let pages: [OnboardingData] = [
@@ -125,7 +125,6 @@ struct CustomOnboardingView: View {
                         HStack {
                             Text(currentPage < pages.count - 1 ? "다음" : "시작하기")
                                 .font(.system(size: 18, weight: .bold))
-                            Image(systemName: "chevron.right")
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -147,6 +146,6 @@ struct CustomOnboardingView: View {
 // MARK: - 미리보기 (Preview)
 struct CustomOnboardingView_Previews: PreviewProvider {
     static var previews: some View {
-        CustomOnboardingView()
+        OnboardingView()
     }
 }

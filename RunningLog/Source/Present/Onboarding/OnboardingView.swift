@@ -9,6 +9,77 @@
 import SwiftUI
 import ComposableArchitecture
 
+
+struct OnboardingView: View {
+    let store: StoreOf<OnboardingFeature>
+    
+    private func buttonText(for currentPage: Int, pageCount: Int) -> String {
+        return currentPage < pageCount - 1 ? "다음" : "시작하기"
+    }
+
+    private let backgroundGradient = LinearGradient(
+        gradient: Gradient(colors: [
+            Color.gradientOrange,
+            Color.white
+        ]),
+        startPoint: .top,
+        endPoint: .bottom
+    )
+    
+    var body: some View {
+        WithViewStore(self.store, observe: { $0 }) { viewStore in
+            ZStack {
+                backgroundGradient
+                    .edgesIgnoringSafeArea(.all)
+                
+                VStack(spacing: 0) {
+                    TabView(selection: viewStore.binding(
+                        get: \.currentPage,
+                        send: OnboardingFeature.Action.pageChanged
+                    )) {
+                        ForEach(viewStore.onboardingData.indices, id: \.self) { index in
+                            OnboardingCardView(data: viewStore.onboardingData[index])
+                                .tag(index)
+                        }
+                    }
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                    
+                    
+                    VStack(spacing: 20) {
+                        HStack(spacing: 8) {
+                            ForEach(viewStore.onboardingData.indices, id: \.self) { index in
+                                Capsule()
+                                    .fill(index == viewStore.currentPage ?
+                                          Color.mainColor :
+                                          Color.gray.opacity(0.3))
+                                    .frame(width: index == viewStore.currentPage ? 25 : 8, height: 8)
+                                    .animation(.spring(), value: viewStore.currentPage)
+                            }
+                        }
+                        .padding(.bottom, 20)
+                        
+                        Button {
+                            viewStore.send(.nextButtonTapped, animation: .easeInOut)
+                        } label: {
+                            Text(buttonText(for: viewStore.currentPage, pageCount: viewStore.onboardingData.count))
+                                .font(.system(size: 18, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.mainColor)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 30)
+                }
+                .edgesIgnoringSafeArea(.bottom)
+            }
+        }
+    }
+}
+
+
 struct OnboardingCardView: View {
     let data: OnboardingData
 
@@ -48,105 +119,3 @@ struct OnboardingCardView: View {
     }
 }
 
-struct OnboardingView: View {
-    @State private var currentPage = 0
-    let onCompletion: () -> Void
-    let pages: [OnboardingData] = [
-        OnboardingData(
-            iconName: "waveform.path.ecg",
-            title: "러닝을 기록하세요",
-            description: "GPS를 통해 실시간으로 러닝 경로와 데이터를 추적합니다",
-            iconColor: Color.mainColor
-        ),
-        OnboardingData(
-            iconName: "location.fill",
-            title: "목표를 달성하세요",
-            description: "주간, 월간 목표를 설정하고 달성률을 확인하세요",
-            iconColor: Color.mainColor
-        ),
-        OnboardingData(
-            iconName: "location.fill",
-            title: "로컬에 안전하게 저장",
-            description: "모든 데이터는 기기에만 저장되어 안전하게 보호됩니다",
-            iconColor: Color.mainColor
-        )
-    ]
-    
-    // 주황색 그라데이션 배경 정의
-    let backgroundGradient = LinearGradient(
-        gradient: Gradient(colors: [
-            Color.gradientOrange,
-            Color.white
-        ]),
-        startPoint: .top,
-        endPoint: .bottom
-    )
-    
-    private func goToNextPage() {
-        if currentPage < pages.count - 1 {
-            withAnimation(.easeInOut) {
-                currentPage += 1
-            }
-        } else {
-            print("시작하기 버튼 눌림")
-            onCompletion()
-        }
-    }
-    
-    var body: some View {
-        ZStack {
-            backgroundGradient
-                .edgesIgnoringSafeArea(.all)
-            
-            VStack(spacing: 0) {
-                TabView(selection: $currentPage) {
-                    ForEach(pages.indices, id: \.self) { index in
-                        OnboardingCardView(data: pages[index])
-                            .tag(index)
-                    }
-                }
-                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                
-                
-                VStack(spacing: 20) {
-                    HStack(spacing: 8) {
-                        ForEach(pages.indices, id: \.self) { index in
-                            Capsule()
-                                .fill(index == currentPage ?
-                                      Color.mainColor :
-                                      Color.gray.opacity(0.3))
-                                .frame(width: index == currentPage ? 25 : 8, height: 8)
-                                .animation(.spring(), value: currentPage)
-                        }
-                    }
-                    .padding(.bottom, 20)
-
-                    // '다음' 버튼
-                    Button(action: goToNextPage) {
-                        HStack {
-                            Text(currentPage < pages.count - 1 ? "다음" : "시작하기")
-                                .font(.system(size: 18, weight: .bold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            Color.mainColor
-                        )
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 30)
-            }
-            .edgesIgnoringSafeArea(.bottom)
-        }
-    }
-}
-
-// MARK: - 미리보기 (Preview)
-struct CustomOnboardingView_Previews: PreviewProvider {
-    static var previews: some View {
-        OnboardingView(){ }
-    }
-}

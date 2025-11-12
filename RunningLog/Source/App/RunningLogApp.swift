@@ -9,16 +9,16 @@ import SwiftUI
 import ComposableArchitecture
 import CoreData
 
+
 @main
 struct RunningLogApp: App {
+    private let rootStore: StoreOf<RootFeature> = Store(initialState: RootFeature.State()) {
+        RootFeature()
+    }
+    
     let persistenceController = PersistenceController.shared
-    @State private var isStoreLoaded = false
     
     init() {
-        // CoreData store 준비 시작
-        _ = persistenceController
-        
-        // TabBar 외형 설정
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = .systemBackground
@@ -28,31 +28,8 @@ struct RunningLogApp: App {
     
     var body: some Scene {
         WindowGroup {
-            Group {
-                if isStoreLoaded {
-                    MainTabView(store: Store(initialState: MainTabFeature.State(), reducer: {
-                        MainTabFeature()
-                    }))
-                    .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                } else {
-                    VStack {
-                        Spacer()
-                        ProgressView("loading_database")
-                            .progressViewStyle(CircularProgressViewStyle())
-                            .padding()
-                        Spacer()
-                    }
-                }
-            }
-            .onAppear {
-                if persistenceController.isStoreLoaded {
-                    isStoreLoaded = true
-                } else {
-                    NotificationCenter.default.addObserver(forName: PersistenceController.storeLoadedNotification, object: nil, queue: .main) { _ in
-                        isStoreLoaded = true
-                    }
-                }
-            }
+            RootView(store: rootStore)
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
     }
 }

@@ -19,22 +19,46 @@ struct RunningView: View {
         WithViewStore(store, observe: { $0 }) { viewStore in
             ZStack {
                 // 1. 러닝 화면 (메인)
-                mainRunningContent(viewStore: viewStore)
-                    .opacity(isMapPresented ? 0 : 1)
-                    .modifier(FlipEffect(angle: isMapPresented ? -90 : 0))
-                // 2. 전체화면 MapView (오버레이)
-                if isMapPresented {
-                    MapFullScreenView(
-                        routeID: viewStore.runID ?? UUID(),
-                        locations: viewStore.pathLocations,
-                        currentLocation: viewStore.pathLocations.last,
-                        onClose: { withAnimation { isMapPresented = false } },
-                        runningTime: viewStore.session.formattedTime,
-                        pace: viewStore.session.currentPace,
-                        distance: viewStore.session.distance
-                    )
-                    .modifier(FlipEffect(angle: isMapPresented ? 0 : 90))
+                VStack(spacing: 16) {
+                    ZStack(alignment: .bottomLeading) {
+                        
+                        MapFullScreenView(
+                            routeID: viewStore.runID ?? UUID(),
+                            locations: viewStore.pathLocations,
+                            currentLocation: viewStore.pathLocations.last,
+                            onClose: { withAnimation { isMapPresented = false } },
+                            runningTime: viewStore.session.formattedTime,
+                            pace: viewStore.session.currentPace,
+                            distance: viewStore.session.distance
+                        )
+                        
+                    }
+                    
+                    controlButtons(for: viewStore)
+                        .padding(.horizontal, 16)
+                    
+                    Text("오늘의 러닝을 기록해보세요.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer(minLength: 16)
                 }
+                //                mainRunningContent(viewStore: viewStore)
+                //                    .opacity(isMapPresented ? 0 : 1)
+                //                    .modifier(FlipEffect(angle: isMapPresented ? -90 : 0))
+                // 2. 전체화면 MapView (오버레이)
+                //                if isMapPresented {
+                //                    MapFullScreenView(
+                //                        routeID: viewStore.runID ?? UUID(),
+                //                        locations: viewStore.pathLocations,
+                //                        currentLocation: viewStore.pathLocations.last,
+                //                        onClose: { withAnimation { isMapPresented = false } },
+                //                        runningTime: viewStore.session.formattedTime,
+                //                        pace: viewStore.session.currentPace,
+                //                        distance: viewStore.session.distance
+                //                    )
+                //                    .modifier(FlipEffect(angle: isMapPresented ? 0 : 90))
+                //                }
                 // 3. 커스텀 정지 Alert
                 if isStopAlertPresented {
                     CustomAlertView(
@@ -73,15 +97,15 @@ struct RunningView: View {
     private func mainRunningContent(viewStore: ViewStore<RunningFeature.State, RunningFeature.Action>) -> some View {
         VStack(spacing: 0) {
             // 상태바 + 지도 버튼
-            HStack {
-                statusBar(for: viewStore.state)
-                Spacer()
-                Button(action: { withAnimation { isMapPresented = true } }) {
-                    Image(systemName: "map")
-                        .font(.title2)
-                        .padding(8)
-                }
-            }
+            //            HStack {
+            //                statusBar(for: viewStore.state)
+            //                Spacer()
+            //                Button(action: { withAnimation { isMapPresented = true } }) {
+            //                    Image(systemName: "map")
+            //                        .font(.title2)
+            //                        .padding(8)
+            //                }
+            //            }
             // 러닝 상태 인디케이터 (활성 상태일 때만 표시)
             if viewStore.session.isActive {
                 runningStatusIndicator(for: viewStore.state)
@@ -121,8 +145,8 @@ struct RunningView: View {
                     StatItem(
                         title: NSLocalizedString("pace", comment: ""),
                         value: viewStore.session.currentPace > 0
-                            ? String(format: "%.2f", viewStore.session.currentPace)
-                            : "--.--",
+                        ? String(format: "%.2f", viewStore.session.currentPace)
+                        : "--.--",
                         unit: NSLocalizedString("unit_min_per_km", comment: "")
                     )
                 }
@@ -145,9 +169,9 @@ struct RunningView: View {
                     .font(.title2)
                     .scaleEffect(isActive && heartRate > 0 ? 1.2 : 1.0)
                     .animation(
-                        isActive && heartRate > 0 ? 
-                        .easeInOut(duration: 0.6).repeatForever(autoreverses: true) : 
-                        .default,
+                        isActive && heartRate > 0 ?
+                            .easeInOut(duration: 0.6).repeatForever(autoreverses: true) :
+                                .default,
                         value: isActive
                     )
                 
@@ -250,14 +274,14 @@ struct RunningView: View {
     private func statusBar(for state: RunningFeature.State) -> some View {
         HStack {
             Circle()
-                .fill(state.session.isActive ? 
-                     (state.session.isPaused ? .orange : .green) : .gray)
+                .fill(state.session.isActive ?
+                      (state.session.isPaused ? .orange : .green) : .gray)
                 .frame(width: 8, height: 8)
             
-            Text(state.session.isActive ? 
+            Text(state.session.isActive ?
                  (state.session.isPaused ? "status_paused" : "status_running") : "status_waiting")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            .font(.caption)
+            .foregroundColor(.secondary)
             
             Spacer()
             
@@ -332,21 +356,23 @@ struct RunningView: View {
     @ViewBuilder
     private func controlButtons(for viewStore: ViewStore<RunningFeature.State, RunningFeature.Action>) -> some View {
         HStack(spacing: 16) {
+            
             if !viewStore.session.isActive {
-                // 시작 버튼
+                
                 Button(action: { viewStore.send(.startRunning) }) {
                     HStack {
                         Image(systemName: "play.fill")
                         Text("start")
                     }
                     .frame(maxWidth: .infinity)
-                    .padding()
+                    .frame(height: 52)
                     .background(.green)
                     .foregroundColor(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .font(.headline)
                 }
                 .disabled(viewStore.isLoading)
+
             } else {
                 if viewStore.session.isPaused {
                     // 재시작 버튼
@@ -401,4 +427,4 @@ struct RunningView: View {
             RunningFeature()
         }
     )
-} 
+}

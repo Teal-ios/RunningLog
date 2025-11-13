@@ -7,7 +7,6 @@ struct MapFullScreenView: View {
     let routeID: UUID
     let locations: [CLLocation]
     let currentLocation: CLLocation?
-    let onClose: () -> Void
     let runningTime: String
     let pace: Double
     let distance: Double
@@ -65,6 +64,8 @@ struct MapFullScreenView: View {
                 
                 // 하단 우측 버튼
                 HStack {
+                    SpeedLegendView()
+                                        .padding(.leading, 16)
                     Spacer() // 왼쪽 공간을 모두 차지
                     
                     VStack(spacing: 16) {
@@ -79,18 +80,8 @@ struct MapFullScreenView: View {
                         }) {
                             Image(systemName: "location.circle.fill")
                                 .font(.system(size: 32))
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color.mainColor)
                                 .padding(10)
-                                .background(Color(.systemBackground).opacity(0.8))
-                                .clipShape(Circle())
-                                .shadow(radius: 3)
-                        }
-                        
-                        // 닫기 버튼
-                        Button(action: onClose) {
-                            Image(systemName: "map")
-                                .font(.title2)
-                                .padding(16)
                                 .background(Color(.systemBackground).opacity(0.8))
                                 .clipShape(Circle())
                                 .shadow(radius: 3)
@@ -112,3 +103,45 @@ struct MapFullScreenView: View {
         }
     }
 } 
+
+// MARK: - SpeedLegendView
+struct SpeedLegendView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // 범례 제목
+            Text("속도 (페이스)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+            
+            // 색상 막대
+            HStack(spacing: 0) {
+                // 느림 (초록)
+                Color.green
+                    .frame(width: 40, height: 8)
+                // 중간 (주황)
+                Color.orange
+                    .frame(width: 40, height: 8)
+                // 빠름 (빨강)
+                Color.red
+                    .frame(width: 40, height: 8)
+            }
+            .cornerRadius(4)
+            .shadow(radius: 2)
+            
+            // 속도 라벨
+            HStack {
+                Text("느림")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("빠름")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            .frame(width: 120) // 색상 막대 너비와 동일하게 설정 (40 * 3 = 120)
+        }
+        .padding(10)
+        .background(.ultraThinMaterial) // 반투명 배경
+        .cornerRadius(10)
+    }
+}

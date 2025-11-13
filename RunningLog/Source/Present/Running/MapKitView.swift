@@ -7,6 +7,25 @@ class SpeedPolyline: MKPolyline {
     var color: UIColor = .black
 }
 
+class RunAnnotation: NSObject, MKAnnotation {
+    // MKAnnotation 프로토콜 요구 사항
+    @objc dynamic var coordinate: CLLocationCoordinate2D
+    var title: String?
+    var subtitle: String?
+    
+    // 마커 타입을 구분하기 위한 커스텀 속성
+    enum AnnotationType {
+        case start, end, current
+    }
+    let type: AnnotationType
+    
+    init(coordinate: CLLocationCoordinate2D, type: AnnotationType, title: String? = nil, subtitle: String? = nil) {
+        self.coordinate = coordinate
+        self.type = type
+        self.title = title
+        self.subtitle = subtitle
+    }
+}
 // MARK: - MapKitView
 struct MapKitView: UIViewRepresentable {
     let routeID: UUID
@@ -40,18 +59,34 @@ struct MapKitView: UIViewRepresentable {
         return mapView
     }
     
+    // MARK: - MapKitView 내 updateUIView 수정
     func updateUIView(_ mapView: MKMapView, context: Context) {
         updateOverlays(mapView: mapView, context: context)
 
-        // 현재 위치 마커(파란 핀)
-        mapView.removeAnnotations(mapView.annotations)
-        if let current = currentLocation {
-            let annotation = MKPointAnnotation()
-            annotation.coordinate = current.coordinate
-            annotation.title = "현재 위치"
-            mapView.addAnnotation(annotation)
-        }
+        // 기존 Annotation 제거 (MKUserLocation은 제거되지 않음)
+        mapView.removeAnnotations(mapView.annotations.filter { !($0 is MKUserLocation) })
         
+        // --- [시작/종료 지점 Annotation 추가] ---
+        if let startLocation = locations.first {
+            let startAnnotation = RunAnnotation(
+                coordinate: startLocation.coordinate,
+                type: .start,
+                title: "시작"
+            )
+            mapView.addAnnotation(startAnnotation)
+        }
+
+        // 러닝이 진행 중이고 위치가 충분히 쌓인 경우에만 종료 지점 (현재 위치) 마커를 표시
+        if locations.count > 1, let endLocation = locations.last {
+            let endAnnotation = RunAnnotation(
+                coordinate: endLocation.coordinate,
+                type: .end,
+                title: "종료"
+            )
+            mapView.addAnnotation(endAnnotation)
+        }
+        // --- ------------------------- ---
+
         // region 바인딩 반영 (변경 시에만 호출)
         if !isRegionEqual(MapKitView.regionBox.lastRegion, region) {
             mapView.setRegion(region, animated: true)
@@ -146,10 +181,10 @@ struct MapKitView: UIViewRepresentable {
         /// - 빠름: 짙은 파랑 (primary)
         func colorForSpeed(speed: CLLocationSpeed) -> UIColor {
             // 프로젝트 디자인 시스템 색상을 UIColor로 정의
-            let slowColor = UIColor(red: 161/255, green: 227/255, blue: 249/255, alpha: 0.85) // accent
-            let mediumColor = UIColor(red: 87/255, green: 143/255, blue: 202/255, alpha: 0.85) // secondary
-            let fastColor = UIColor(red: 52/255, green: 116/255, blue: 181/255, alpha: 0.85)   // primary
-
+            let slowColor = UIColor.systemGreen // 느림: 초록
+                let mediumColor = UIColor.systemOrange // 중간: 주황
+                let fastColor = UIColor.systemRed // 빠름: 빨강
+            
             // m/s 기준 속도 범위 설정 (예: 2 m/s ~ 5 m/s)
             let minSpeed: CLLocationSpeed = 2.0  // 약 7.2 km/h, 8:20 min/km 페이스
             let maxSpeed: CLLocationSpeed = 5.0  // 약 18 km/h, 3:20 min/km 페이스
@@ -185,5 +220,32 @@ struct MapKitView: UIViewRepresentable {
             
             return UIColor(red: r, green: g, blue: b, alpha: a)
         }
+        
+        // MARK: - Coordinator 내 mapView(_:viewFor:) 수정
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            // 1. MKUserLocation (사용자의 파란색 위치 점)은 기본 뷰를 사용하도록 nil 반환
+            guard !(annotation is MKUserLocation) else { return nil }
+            
+            // 2. RunAnnotation 타입으로 캐스팅하여 마커의 목적 확인
+            guard let runAnnotation = annotation as? RunAnnotation else {
+                return nil // 다른 타입의 Annotation은 무시
+            }
+            
+            let identifier = "RunMarker"
+            var annotationView: MKMarkerAnnotationView
+            
+            if let dequeuedView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView {
+                dequeuedView.annotation = annotation
+                annotationView = dequeuedView
+            } else {
+                annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                annotationView.canShowCallout = true // 제목을 표시할 수 있게 허용
+            }
+            
+            annotationView.markerTintColor = .orange // 시작: 초록색
+            annotationView.glyphText = "🏃" // 체크 깃발 이모티콘
+            
+            return annotationView
+        }
     }
-} 
+}

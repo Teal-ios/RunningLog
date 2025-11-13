@@ -26,7 +26,6 @@ struct RunningView: View {
                             routeID: viewStore.runID ?? UUID(),
                             locations: viewStore.pathLocations,
                             currentLocation: viewStore.pathLocations.last,
-                            onClose: { withAnimation { isMapPresented = false } },
                             runningTime: viewStore.session.formattedTime,
                             pace: viewStore.session.currentPace,
                             distance: viewStore.session.distance
@@ -366,7 +365,7 @@ struct RunningView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
-                    .background(.green)
+                    .background(Color.mainColor)
                     .foregroundColor(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .font(.headline)

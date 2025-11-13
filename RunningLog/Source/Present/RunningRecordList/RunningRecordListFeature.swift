@@ -1,6 +1,5 @@
 import Foundation
 import ComposableArchitecture
-import RunningLog
 
 @Reducer
 struct RunningRecordListFeature {

@@ -29,6 +29,14 @@ extension RunningRecord {
         formatter.dateFormat = "yyyy.MM.dd"
         return formatter.string(from: startTime)
     }
+    
+    var endTimeString: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "a hh:mm"
+        return formatter.string(from: endTime)
+    }
+    
     var formattedDistance: String {
         String(format: "%.2f km", distance / 1000)
     }
@@ -45,4 +53,4 @@ extension RunningRecord {
         let sec = Int(pace) % 60
         return String(format: "%d'%02d\"/km", min, sec)
     }
-} 
+}

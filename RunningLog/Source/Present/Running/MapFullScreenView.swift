@@ -115,26 +115,28 @@ struct SpeedLegendView: View {
             
             // 색상 막대
             HStack(spacing: 0) {
-                // 느림 (초록)
-                Color.green
-                    .frame(width: 40, height: 8)
-                // 중간 (주황)
-                Color.orange
-                    .frame(width: 40, height: 8)
-                // 빠름 (빨강)
-                Color.red
-                    .frame(width: 40, height: 8)
+                
+                Color(uiColor:  UIColor.poly_Slowest)
+                    .frame(width: 20, height: 8)
+                Color(uiColor: UIColor.poly_Slow)
+                    .frame(width: 20, height: 8)
+                Color(uiColor: UIColor.poly_Medium)
+                    .frame(width: 20, height: 8)
+                Color(uiColor: UIColor.poly_Fast)
+                    .frame(width: 20, height: 8)
+                Color(uiColor: UIColor.poly_Fastest)
+                    .frame(width: 20, height: 8)
             }
             .cornerRadius(4)
             .shadow(radius: 2)
             
             // 속도 라벨
             HStack {
-                Text("느림")
+                Text("느림: 2m/s")
                     .font(.caption2)
                     .foregroundColor(.secondary)
                 Spacer()
-                Text("빠름")
+                Text("빠름: 5m/s")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }

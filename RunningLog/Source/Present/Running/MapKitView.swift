@@ -175,36 +175,43 @@ struct MapKitView: UIViewRepresentable {
             return MKOverlayRenderer(overlay: overlay)
         }
         
-        /// 속도(m/s)를 기반으로 프로젝트 디자인 시스템에 맞는 색상을 결정하는 함수
-        /// - 느림: 밝은 파랑 (accent)
-        /// - 중간: 중간 파랑 (secondary)
-        /// - 빠름: 짙은 파랑 (primary)
         func colorForSpeed(speed: CLLocationSpeed) -> UIColor {
-            // 프로젝트 디자인 시스템 색상을 UIColor로 정의
-            let slowColor = UIColor.systemGreen // 느림: 초록
-                let mediumColor = UIColor.systemOrange // 중간: 주황
-                let fastColor = UIColor.systemRed // 빠름: 빨강
-            
-            // m/s 기준 속도 범위 설정 (예: 2 m/s ~ 5 m/s)
-            let minSpeed: CLLocationSpeed = 2.0  // 약 7.2 km/h, 8:20 min/km 페이스
-            let maxSpeed: CLLocationSpeed = 5.0  // 약 18 km/h, 3:20 min/km 페이스
-            
-            // 속도를 0.0 ~ 1.0 범위로 정규화
+            // 1️⃣ 느림 → 빠름 기준의 5가지 핵심 색상 정의
+            let color1_Slowest = UIColor(red: 11/255, green: 218/255, blue: 11/255, alpha: 1.0)  
+            let color2_Slow    = UIColor(red: 114/255, green: 218/255, blue: 11/255, alpha: 1.0)
+            let color3_Medium  = UIColor(red: 218/255, green: 218/255, blue: 11/255, alpha: 1.0)
+            let color4_Fast    = UIColor(red: 218/255, green: 114/255, blue: 11/255, alpha: 1.0)
+            let color5_Fastest = UIColor(red: 218/255, green: 11/255,  blue: 11/255, alpha: 1.0)
+
+            // 2️⃣ m/s 기준 속도 범위 설정 (원하는 범위로 조정 가능)
+            let minSpeed: CLLocationSpeed = 2.0
+            let maxSpeed: CLLocationSpeed = 5.0
+
+            // 3️⃣ 속도를 0.0 ~ 1.0으로 정규화
             let clampedSpeed = max(minSpeed, min(speed, maxSpeed))
             let normalizedSpeed = (clampedSpeed - minSpeed) / (maxSpeed - minSpeed)
-            
-            // 정규화된 속도에 따라 색상 보간
-            if normalizedSpeed < 0.5 {
-                // 0.0 ~ 0.5 구간: slowColor -> mediumColor
-                let t = normalizedSpeed * 2.0
-                return lerp(from: slowColor, to: mediumColor, at: CGFloat(t))
+            let t = CGFloat(normalizedSpeed)
+
+            // 4️⃣ 4개 구간으로 나누어 자연스럽게 색상 보간
+            if t < 0.25 {
+                // 구간 1: 초록 → 연녹
+                let segmentT = t / 0.25
+                return lerp(from: UIColor.poly_Slowest, to: UIColor.poly_Slow, at: segmentT)
+            } else if t < 0.50 {
+                // 구간 2: 연녹 → 노랑
+                let segmentT = (t - 0.25) / 0.25
+                return lerp(from: UIColor.poly_Slow, to: UIColor.poly_Medium, at: segmentT)
+            } else if t < 0.75 {
+                // 구간 3: 노랑 → 주황
+                let segmentT = (t - 0.50) / 0.25
+                return lerp(from: UIColor.poly_Medium, to: UIColor.poly_Fast, at: segmentT)
             } else {
-                // 0.5 ~ 1.0 구간: mediumColor -> fastColor
-                let t = (normalizedSpeed - 0.5) * 2.0
-                return lerp(from: mediumColor, to: fastColor, at: CGFloat(t))
+                // 구간 4: 주황 → 빨강
+                let segmentT = (t - 0.75) / 0.25
+                return lerp(from: UIColor.poly_Fast, to: UIColor.poly_Fastest, at: segmentT)
             }
         }
-        
+
         /// 두 UIColor 사이의 색상을 선형 보간하는 헬퍼 함수
         private func lerp(from color1: UIColor, to color2: UIColor, at t: CGFloat) -> UIColor {
             var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0

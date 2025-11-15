@@ -26,6 +26,31 @@ struct WeeklyStats: Equatable {
     var dailyTimeMinutes: [Double] = Array(repeating: 0.0, count: 7)
 }
 
+// 월간 통계 (주간 추이 데이터 포함)
+struct MonthlyStats: Equatable {
+    let totalDistance: Double
+    let totalTime: Double
+    let runCount: Int
+    let averagePace: Double
+    
+    // 월간: 주별 기록 (1주차, 2주차, ...)
+    var weeklyDistance: [Double] = []
+    var weeklyTimeMinutes: [Double] = []
+    var weekLabels: [String] = [] // "1주", "2주" 레이블
+}
+
+// 연간 통계 (월별 추이 데이터 포함)
+struct YearlyStats: Equatable {
+    let totalDistance: Double
+    let totalTime: Double
+    let runCount: Int
+    let averagePace: Double
+    
+    // 연간: 월별 기록 (1월, 2월, ...)
+    var monthlyDistance: [Double] = Array(repeating: 0.0, count: 12)
+    var monthlyTimeMinutes: [Double] = Array(repeating: 0.0, count: 12)
+}
+
 // 월간/연간 통계를 위한 범용 통계 구조체
 struct PeriodStats: Equatable {
     let totalDistance: Double
@@ -41,6 +66,9 @@ struct PeriodStats: Equatable {
 @Reducer
 struct StatisticsFeature {
     
+    // StatisticsFeature 내부 또는 파일 상단에 정의
+    static let minimumElapsedTime: Double = 60.0 // 1분 = 60초
+    static let minimumDistance: Double = 0.1 // 100미터 = 0.1km
     // 통계 기간 enum
     enum StatsPeriod: String, CaseIterable, Identifiable {
         case weekly = "주간"
@@ -54,14 +82,15 @@ struct StatisticsFeature {
         var records: [RunningRecord] = [] // 외부에서 주입받는 원본 데이터
         // ✨ 변경: 기간별 통계를 저장할 필드 추가
         var weeklyStats: WeeklyStats? = nil
-        var monthlyStats: PeriodStats? = nil
-        var yearlyStats: PeriodStats? = nil
+        // ✨ 변경: MonthlyStats, YearlyStats 사용
+        var monthlyStats: MonthlyStats? = nil
+        var yearlyStats: YearlyStats? = nil
         
         var selectedStatsPeriod: StatsPeriod = .weekly // 초기값: 주간
         var isLoading = false
         var errorMessage: String?
         var repository: RunningRecordRepository? = nil
-
+        
         static func == (lhs: State, rhs: State) -> Bool {
             // records.count는 로드 여부 판단을 위해 유지
             lhs.records.count == rhs.records.count &&
@@ -93,12 +122,7 @@ struct StatisticsFeature {
                 
             case let .selectStatsPeriod(period):
                 state.selectedStatsPeriod = period
-                // 기간이 변경되면 해당 통계가 이미 State에 있는지 확인하고, 없으면 계산
-                if (period == .monthly && state.monthlyStats == nil) ||
-                   (period == .yearly && state.yearlyStats == nil) {
-                    return .send(.calculateStats)
-                }
-                return .none
+                return .send(.calculateStats) // 기간이 바뀌면 통계 다시 계산/갱신
                 
             case .onAppear:
                 // ... 기존 로직 유지 ... (PersistenceController.shared.isStoreLoaded, repository 생성 등)
@@ -144,17 +168,16 @@ struct StatisticsFeature {
                 return .none
                 
             case .calculateStats:
-                // 주간 통계 계산 (항상 계산하여 최신 상태 유지)
+                // 주간 통계 (항상 계산)
                 state.weeklyStats = StatisticsFeature.calculateWeeklyStats(from: state.records)
-
-                // 선택된 기간이 월간이고, 아직 계산되지 않았거나, 전체 기록이 업데이트된 경우 계산
+                
+                // 월간/연간은 필요할 때만 계산 (새 레코드가 로드되거나, 해당 탭이 선택되었을 때)
                 if state.selectedStatsPeriod == .monthly || state.monthlyStats == nil {
-                    state.monthlyStats = StatisticsFeature.calculatePeriodStats(from: state.records, period: .monthly)
+                    state.monthlyStats = StatisticsFeature.calculateMonthlyStats(from: state.records)
                 }
-
-                // 선택된 기간이 연간이고, 아직 계산되지 않았거나, 전체 기록이 업데이트된 경우 계산
+                
                 if state.selectedStatsPeriod == .yearly || state.yearlyStats == nil {
-                    state.yearlyStats = StatisticsFeature.calculatePeriodStats(from: state.records, period: .yearly)
+                    state.yearlyStats = StatisticsFeature.calculateYearlyStats(from: state.records)
                 }
                 
                 return .none
@@ -164,7 +187,6 @@ struct StatisticsFeature {
     
     // MARK: - 통계 계산 헬퍼 함수
     
-    // 주간 통계 (일별 데이터 포함, 기존 로직 유지)
     static func calculateWeeklyStats(from records: [RunningRecord]) -> WeeklyStats {
         let calendar = Calendar.current
         let today = Date()
@@ -172,21 +194,27 @@ struct StatisticsFeature {
             return .init(totalDistance: 0, totalTime: 0, runCount: 0, averagePace: 0)
         }
         
+        // 1차 필터링: 해당 주간의 레코드만
         let weeklyRecords = records.filter { record in
             record.startTime >= startOfWeek
         }
         
-        // ... (주간 통계 계산 로직 유지) ...
-        let totalDistance = weeklyRecords.reduce(0.0) { $0 + $1.distance }
-        let totalTime = weeklyRecords.reduce(0.0) { $0 + $1.elapsedTime }
-        let runCount = weeklyRecords.count
+        // ✨ 2차 필터링 추가: 시간이 1분(60초) 초과 AND 거리가 100m(0.1km) 초과인 레코드만 포함
+        let filteredRecords = weeklyRecords.filter { record in
+            record.elapsedTime > minimumElapsedTime && record.distance > minimumDistance
+        }
+        
+        // 이후 로직은 filteredRecords를 사용하도록 변경
+        let totalDistance = filteredRecords.reduce(0.0) { $0 + $1.distance }
+        let totalTime = filteredRecords.reduce(0.0) { $0 + $1.elapsedTime }
+        let runCount = filteredRecords.count
         let averagePace = totalDistance > 0 ? totalTime / totalDistance : 0
         
         var dailyDistance: [Double] = Array(repeating: 0.0, count: 7)
         var dailyTimeMinutes: [Double] = Array(repeating: 0.0, count: 7)
         
-        for record in weeklyRecords {
-            let weekday = calendar.component(.weekday, from: record.startTime) // 1=일요일, 2=월요일, ...
+        for record in filteredRecords { // filteredRecords 사용
+            let weekday = calendar.component(.weekday, from: record.startTime)
             let index = (weekday + 5) % 7 // 0=일, 1=월, ...
             
             dailyDistance[index] += record.distance
@@ -239,6 +267,112 @@ struct StatisticsFeature {
             totalTime: totalTime,
             runCount: runCount,
             averagePace: averagePace
+        )
+    }
+    
+    
+    static func calculateMonthlyStats(from records: [RunningRecord]) -> MonthlyStats {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: today)) else {
+            return .init(totalDistance: 0, totalTime: 0, runCount: 0, averagePace: 0)
+        }
+        
+        // 1차 필터링: 해당 월의 레코드만
+        let monthlyRecords = records.filter { record in record.startTime >= startOfMonth }
+        
+        // ✨ 2차 필터링 추가: 시간이 1분(60초) 초과 AND 거리가 100m(0.1km) 초과인 레코드만 포함
+        let filteredRecords = monthlyRecords.filter { record in
+            record.elapsedTime > minimumElapsedTime && record.distance > minimumDistance
+        }
+        
+        // 이후 로직은 filteredRecords를 사용하도록 변경
+        let totalDistance = filteredRecords.reduce(0.0) { $0 + $1.distance }
+        let totalTime = filteredRecords.reduce(0.0) { $0 + $1.elapsedTime }
+        let runCount = filteredRecords.count
+        let averagePace = totalDistance > 0 ? totalTime / totalDistance : 0
+        
+        // 주차별 데이터 집계 (filteredRecords 기반으로 수정)
+        var weeklyDistance: [Double] = []
+        var weeklyTimeMinutes: [Double] = []
+        var weekLabels: [String] = []
+        
+        let currentWeek = calendar.component(.weekOfMonth, from: today)
+        
+        for i in 1...currentWeek {
+            // ... (주차 시작/끝 날짜 계산 로직 유지)
+            guard let startDate = calendar.date(byAdding: .weekOfMonth, value: i - 1, to: startOfMonth) else { continue }
+            // 해당 주차의 끝 날짜를 다음 주의 시작 날짜로 설정 (보다 정확한 주차 구분)
+            guard let endDate = calendar.date(byAdding: .weekOfMonth, value: 1, to: startDate) else { continue }
+            
+            // 해당 주차에 포함되는 레코드 필터링 (filteredRecords에서 가져옴)
+            let weekRecords = filteredRecords.filter { record in
+                record.startTime >= startDate && record.startTime < endDate
+            }
+            
+            let weekDistance = weekRecords.reduce(0.0) { $0 + $1.distance }
+            let weekTimeMinutes = weekRecords.reduce(0.0) { $0 + $1.elapsedTime / 60.0 }
+            
+            weeklyDistance.append(weekDistance)
+            weeklyTimeMinutes.append(weekTimeMinutes)
+            weekLabels.append("\(i)주")
+        }
+        
+        return MonthlyStats(
+            totalDistance: totalDistance,
+            totalTime: totalTime,
+            runCount: runCount,
+            averagePace: averagePace,
+            weeklyDistance: weeklyDistance,
+            weeklyTimeMinutes: weeklyTimeMinutes,
+            weekLabels: weekLabels
+        )
+    }
+
+    static func calculateYearlyStats(from records: [RunningRecord]) -> YearlyStats {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        guard let startOfYear = calendar.date(from: calendar.dateComponents([.year], from: today)) else {
+            return .init(totalDistance: 0, totalTime: 0, runCount: 0, averagePace: 0)
+        }
+        
+        // 1차 필터링: 해당 년도의 레코드만
+        let yearlyRecords = records.filter { record in record.startTime >= startOfYear }
+        
+        // ✨ 2차 필터링 추가: 시간이 1분(60초) 초과 AND 거리가 100m(0.1km) 초과인 레코드만 포함
+        let filteredRecords = yearlyRecords.filter { record in
+            record.elapsedTime > minimumElapsedTime && record.distance > minimumDistance
+        }
+        
+        // 이후 로직은 filteredRecords를 사용하도록 변경
+        let totalDistance = filteredRecords.reduce(0.0) { $0 + $1.distance }
+        let totalTime = filteredRecords.reduce(0.0) { $0 + $1.elapsedTime }
+        let runCount = filteredRecords.count
+        let averagePace = totalDistance > 0 ? totalTime / totalDistance : 0
+        
+        // 월별 데이터 집계 (filteredRecords 기반으로 수정)
+        var monthlyDistance: [Double] = Array(repeating: 0.0, count: 12)
+        var monthlyTimeMinutes: [Double] = Array(repeating: 0.0, count: 12)
+        
+        for record in filteredRecords { // filteredRecords 사용
+            let month = calendar.component(.month, from: record.startTime)
+            let index = month - 1
+            print(record.distance)
+            if index >= 0 && index < 12 {
+                monthlyDistance[index] += record.distance
+                monthlyTimeMinutes[index] += record.elapsedTime / 60.0
+            }
+        }
+        
+        return YearlyStats(
+            totalDistance: totalDistance,
+            totalTime: totalTime,
+            runCount: runCount,
+            averagePace: averagePace,
+            monthlyDistance: monthlyDistance,
+            monthlyTimeMinutes: monthlyTimeMinutes
         )
     }
 }

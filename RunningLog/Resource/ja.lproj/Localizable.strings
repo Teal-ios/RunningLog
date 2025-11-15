@@ -17,6 +17,7 @@
 "tab_weather" = "天気";
 "tab_running" = "ランニング";
 "tab_record" = "記録";
+"tab_statistics" = "統計";
 
 // MARK: - 天気画面
 "weather_loading" = "天気情報を読み込み中...";

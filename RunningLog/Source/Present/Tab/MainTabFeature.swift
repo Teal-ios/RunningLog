@@ -34,7 +34,7 @@ struct MainTabFeature {
             case .record:
                 return NSLocalizedString("tab_record", comment: "")
             case .statistics:
-                return "statistics"
+                return NSLocalizedString("tab_statistics", comment: "")
             }
         }
         
@@ -47,7 +47,7 @@ struct MainTabFeature {
             case .record:
                 return "list.bullet"
             case .statistics:
-                return "bar.chart"
+                return "chart.bar.fill"
             }
         }
     }

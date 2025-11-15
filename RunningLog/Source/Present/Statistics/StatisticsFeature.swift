@@ -204,11 +204,11 @@ struct StatisticsFeature {
             record.elapsedTime > minimumElapsedTime && record.distance > minimumDistance
         }
         
-        // 이후 로직은 filteredRecords를 사용하도록 변경
         let totalDistance = filteredRecords.reduce(0.0) { $0 + $1.distance }
         let totalTime = filteredRecords.reduce(0.0) { $0 + $1.elapsedTime }
+        let totalDistanceInKm = totalDistance / 1000.0 // 👈 미터 -> 킬로미터 변환
         let runCount = filteredRecords.count
-        let averagePace = totalDistance > 0 ? totalTime / totalDistance : 0
+        let averagePace = totalDistanceInKm > 0 ? totalTime / totalDistanceInKm : 0
         
         var dailyDistance: [Double] = Array(repeating: 0.0, count: 7)
         var dailyTimeMinutes: [Double] = Array(repeating: 0.0, count: 7)
@@ -290,8 +290,9 @@ struct StatisticsFeature {
         // 이후 로직은 filteredRecords를 사용하도록 변경
         let totalDistance = filteredRecords.reduce(0.0) { $0 + $1.distance }
         let totalTime = filteredRecords.reduce(0.0) { $0 + $1.elapsedTime }
+        let totalDistanceInKm = totalDistance / 1000.0
         let runCount = filteredRecords.count
-        let averagePace = totalDistance > 0 ? totalTime / totalDistance : 0
+        let averagePace = totalDistanceInKm > 0 ? totalTime / totalDistanceInKm : 0
         
         // 주차별 데이터 집계 (filteredRecords 기반으로 수정)
         var weeklyDistance: [Double] = []
@@ -349,9 +350,10 @@ struct StatisticsFeature {
         // 이후 로직은 filteredRecords를 사용하도록 변경
         let totalDistance = filteredRecords.reduce(0.0) { $0 + $1.distance }
         let totalTime = filteredRecords.reduce(0.0) { $0 + $1.elapsedTime }
+        let totalDistanceInKm = totalDistance / 1000.0 // 👈 미터 -> 킬로미터 변환
         let runCount = filteredRecords.count
-        let averagePace = totalDistance > 0 ? totalTime / totalDistance : 0
-        
+        let averagePace = totalDistanceInKm > 0 ? totalTime / totalDistanceInKm : 0
+        print("주간 통계 - 총 거리: \(totalDistance), 총 시간: \(totalTime)")
         // 월별 데이터 집계 (filteredRecords 기반으로 수정)
         var monthlyDistance: [Double] = Array(repeating: 0.0, count: 12)
         var monthlyTimeMinutes: [Double] = Array(repeating: 0.0, count: 12)
@@ -359,13 +361,14 @@ struct StatisticsFeature {
         for record in filteredRecords { // filteredRecords 사용
             let month = calendar.component(.month, from: record.startTime)
             let index = month - 1
-            print(record.distance)
             if index >= 0 && index < 12 {
                 monthlyDistance[index] += record.distance
                 monthlyTimeMinutes[index] += record.elapsedTime / 60.0
             }
         }
         
+        print("average", averagePace)
+
         return YearlyStats(
             totalDistance: totalDistance,
             totalTime: totalTime,

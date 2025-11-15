@@ -191,11 +191,11 @@ struct StatisticsView: View {
                     
                     Spacer()
                 }
-                .background(Color(.systemGroupedBackground).edgesIgnoringSafeArea(.all))
                 .onAppear { viewStore.send(.onAppear) }
             }
         }
-    } // body
+        .background(Color(.systemGroupedBackground))
+    }
     
     // MARK: - View 헬퍼 함수
     

@@ -67,7 +67,7 @@ struct MainTabView: View {
                     }
                     .tag(MainTabFeature.Tab.record)
             }
-            .accentColor(.blue)
+            .accentColor(Color.mainColor)
         }
     }
 }

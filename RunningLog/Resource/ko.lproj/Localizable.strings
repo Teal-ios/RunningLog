@@ -17,6 +17,8 @@
 "tab_weather" = "날씨";
 "tab_running" = "러닝";
 "tab_record" = "기록";
+"tab_statistics" = "통계";
+
 
 // MARK: - 날씨 화면
 "weather_loading" = "날씨 정보를 불러오는 중...";

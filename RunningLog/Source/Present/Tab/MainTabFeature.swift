@@ -16,12 +16,14 @@ struct MainTabFeature {
         var weatherState = WeatherFeature.State()
         var runningState = RunningFeature.State()
         var runningRecordList = RunningRecordListFeature.State()
+        var statisticsState = StatisticsFeature.State()
     }
     
     enum Tab: CaseIterable {
         case weather
         case running
         case record
+        case statistics
         
         var title: String {
             switch self {
@@ -31,6 +33,8 @@ struct MainTabFeature {
                 return NSLocalizedString("tab_running", comment: "")
             case .record:
                 return NSLocalizedString("tab_record", comment: "")
+            case .statistics:
+                return NSLocalizedString("tab_statistics", comment: "")
             }
         }
         
@@ -42,6 +46,8 @@ struct MainTabFeature {
                 return "figure.run"
             case .record:
                 return "list.bullet"
+            case .statistics:
+                return "chart.bar.fill"
             }
         }
     }
@@ -51,6 +57,7 @@ struct MainTabFeature {
         case weather(WeatherFeature.Action)
         case running(RunningFeature.Action)
         case runningRecordList(RunningRecordListFeature.Action)
+        case statistics(StatisticsFeature.Action)
         case selectTab(Tab)
     }
     
@@ -67,6 +74,9 @@ struct MainTabFeature {
             RunningRecordListFeature()
         }
         
+        Scope(state: \.statisticsState, action: /Action.statistics) {
+            StatisticsFeature()
+        }
         Reduce { state, action in
             switch action {
             case let .tabSelected(tab):
@@ -79,7 +89,7 @@ struct MainTabFeature {
                     return .send(.runningRecordList(.loadRecords))
                 }
                 
-            case .weather, .running, .runningRecordList:
+            case .weather, .running, .runningRecordList, .statistics:
                 return .none
             case .selectTab:
                 return .none

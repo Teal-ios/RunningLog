@@ -17,6 +17,7 @@
 "tab_weather" = "Weather";
 "tab_running" = "Running";
 "tab_record" = "Records";
+"tab_statistics" = "Statistics";
 
 // MARK: - Weather Screen
 "weather_loading" = "Loading weather information...";

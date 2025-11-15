@@ -46,6 +46,20 @@ struct MainTabView: View {
                 }
                 .tag(MainTabFeature.Tab.running)
                 
+                StatisticsView(
+                    store: store.scope(
+                        state: \.statisticsState,
+                        action: \.statistics
+                    )
+                )
+                .tabItem {
+                    Label(
+                        MainTabFeature.Tab.statistics.title,
+                        systemImage: MainTabFeature.Tab.statistics.systemImage
+                    )
+                }
+                .tag(MainTabFeature.Tab.statistics)
+                
                 // 기록 탭
                 RunningRecordListView(store: store.scope(state: \ .runningRecordList, action: MainTabFeature.Action.runningRecordList))
                     .tabItem {
@@ -53,7 +67,7 @@ struct MainTabView: View {
                     }
                     .tag(MainTabFeature.Tab.record)
             }
-            .accentColor(.blue)
+            .accentColor(Color.mainColor)
         }
     }
 }

@@ -12,7 +12,7 @@ struct WeeklyStats: Equatable {
     let totalTime: Double
     let runCount: Int
     let averagePace: Double
-    let targetDistance: Double = 10.0
+    let targetDistance: Double = 10000.0
     let targetCount: Int = 3
     
     var dailyDistance: [Double] = Array(repeating: 0.0, count: 7)

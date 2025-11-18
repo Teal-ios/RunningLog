@@ -1,42 +1,42 @@
 # RunningLog
 
-## ✨ 주요 기능
+## 주요 기능
 
-### 🎯 러닝 추적
+### 러닝 추적
 - **위치 추적 및 러닝 기록 구성**: Kalman Filter 알고리즘을 적용한 GPS 노이즈 제거 및 정확도 향상
 - **실시간 데이터**: 거리, 시간, 페이스, 칼로리 실시간 계산
 - **백그라운드 추적**: 앱이 백그라운드에 있어도 연속적인 위치 추적
 - **심박수 모니터링**: HealthKit을 통한 실시간 심박수 데이터 수집
 - **경로 시각화**: MapKit을 활용한 러닝 경로 표시 및 속도별 색상 구분
 
-### 🌤️ 날씨 정보
+### 날씨 정보
 - **실시간 날씨**: OpenWeatherMap API를 통한 현재 날씨 정보
 - **시간별 예보**: 3시간 단위 날씨 예보 제공
 - **대기질 정보**: PM2.5, PM10 등 대기질 지수 제공
 - **위치 기반**: GPS 위치에 따른 정확한 날씨 정보
 
-### 📊 데이터 관리
+### 데이터 관리
 - **CoreData 저장**: 러닝 기록 CoreData 저장
 - **HealthKit 연동**: HealthKit 통한 심박수 데이터
 - **상세 기록**: 러닝 시간, 거리, 칼로리, 평균 페이스, 경로 정보 저장
 - **기록 목록**: 과거 러닝 기록 조회 및 관리
 
-### 🎛️ 위젯
+### 위젯
 - **홈 스크린 위젯**: 현재 러닝 상태를 홈 스크린에서 바로 확인
 - **실시간 업데이트**: 러닝 중 위젯 데이터 자동 갱신
 - **간편 제어**: 위젯에서 직접 러닝 시작/일시정지 가능
 
-### 🌍 다국어 지원
+### 다국어 지원
 - **3개 언어**: 한국어, 영어, 일본어 지원
 - **로컬라이제이션**: 모든 UI 텍스트 및 메시지 현지화
 - **지역 맞춤**: 날짜/시간 형식 등 지역별 표시 형식 지원
 
-## 🛠 기술 스택
+## 기술 스택
 
-### 🏗️ 아키텍처
+### 아키텍처
 - **TCA (The Composable Architecture)**: TCA 기반의 단방향 아키텍처로 데이터 플로우 관리
 
-### 📱 프레임워크 & 라이브러리
+### 프레임워크 & 라이브러리
 - **SwiftUI**: 선언적 UI 프레임워크
 - **MapKit**: 지도 및 위치 서비스
 - **HealthKit**: 건강 데이터 통합
@@ -45,20 +45,20 @@
 - **WidgetKit**: 위젯 개발 프레임워크
 - **Combine**: 반응형 프로그래밍
 
-### 🔧 사용 기술
+### 사용 기술
 - **Kalman Filter**: GPS 신호 노이즈 제거 및 위치 정확도 개선
 - **AsyncSequence**: 비동기 위치 업데이트 스트림
 - **Background Location**: 백그라운드 위치 추적
 - **App Groups**: 앱과 위젯 간 데이터 공유
 - **Async/Await**: 모던 Swift 비동기 처리
 
-### 🌐 외부 API
+### 외부 API
 - **OpenWeatherMap API**: 날씨 정보 및 대기질 데이터
   - Current Weather API: 실시간 날씨
   - Forecast API: 시간별 예보
   - Air Pollution API: 대기질 정보
 
-## 📁 프로젝트 구조
+## 프로젝트 구조
 
 ```
 RunningLog/
@@ -105,7 +105,7 @@ RunningWidget/                   # 위젯 확장
 └── RunningWidgetBundle.swift   # 위젯 번들
 ```
 
-## 🚀 주요 기술적 특징
+## 주요 기술적 특징
 
 ### 1. Kalman Filter 기반 GPS 정확도 향상
 ```swift
@@ -153,7 +153,7 @@ sharedDefaults?.set(formattedTime, forKey: "time")
 WidgetCenter.shared.reloadTimelines(ofKind: "RunningWidget")
 ```
 
-## 📋 시스템 요구사항
+## 시스템 요구사항
 
 - **iOS**: 17.0 이상
 - **Xcode**: 15.0 이상

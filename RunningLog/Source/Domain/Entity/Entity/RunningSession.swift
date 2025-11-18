@@ -42,7 +42,7 @@ struct RunningSession: Equatable {
         return String(format: "%.0f", calories)
     }
     
-    // 칼로리 계산 (MET 기반)
+    // 칼로리 계산
     mutating func calculateCalories(userProfile: UserProfile) {
         guard elapsedTime > 0 else { return }
         
@@ -62,7 +62,6 @@ struct RunningSession: Equatable {
         default: met = 15.0      // 스프린트
         }
         
-        // 칼로리 = MET × 체중(kg) × 시간(h) × 성별 보정
         calories = met * userProfile.weight * timeInHours * userProfile.gender.calorieMultiplier
     }
 }

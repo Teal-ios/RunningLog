@@ -1,4 +1,6 @@
 # RunningLog
+<img width="945" height="357" alt="제목 없는 디자인 (4)" src="https://github.com/user-attachments/assets/0be1054c-5515-4904-bf13-f2fbd83ca863" />
+
 
 ## 주요 기능
 

@@ -21,7 +21,6 @@ struct RunningView: View {
                 // 1. 러닝 화면 (메인)
                 VStack(spacing: 16) {
                     ZStack(alignment: .bottomLeading) {
-                        
                         MapFullScreenView(
                             routeID: viewStore.runID ?? UUID(),
                             locations: viewStore.pathLocations,

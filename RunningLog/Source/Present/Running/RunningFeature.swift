@@ -73,8 +73,7 @@ struct RunningFeature {
                 print("[RunningFeature] locationClient 인스턴스 주소: \(Unmanaged.passUnretained(locationClient as AnyObject).toOpaque())")
                 return .concatenate(
                         .run { send in
-                            // 1. 진입하자마자 위치 추적을 무조건 시작합니다. (지도 현위치 표시용)
-                            await send(.startLocationTracking) // ✅ 추가됨
+
                             
                             // 현재 세션 상태와 위치 정보 동기화
                             if let currentSession = await runningClient.getSession() {
@@ -85,17 +84,16 @@ struct RunningFeature {
                                 
                                 // 세션이 활성 상태(러닝 중)라면 타이머 재시작
                                 if currentSession.isActive && !currentSession.isPaused {
-                                    // await send(.startLocationTracking) // 위에서 이미 시작했으므로 중복 제거 가능
                                     await send(.timerTick)
                                 }
-                                // else if !currentSession.isActive { ... }
-                                // ⚠️ 중요: 여기서 stopLocationTracking을 호출하던 기존 로직은 제거해야 합니다.
                                 
                             } else {
                                 await send(.sessionResponse(.success(nil)))
-                                // ⚠️ 중요: 세션이 없어도 지도는 내 위치를 보여줘야 하므로 stopLocationTracking 제거
-                                await send(.stopHeartRateTracking) // 심박수는 꺼도 됨
+                                await send(.stopHeartRateTracking)
                             }
+                            
+                            await send(.startLocationTracking) // ✅ 추가됨
+
                         },
                     // 위젯 액션 체크 타이머 시작
                     .run { send in
@@ -341,7 +339,6 @@ struct RunningFeature {
                 if state.pathLocations.isEmpty {
                     state.pathLocations.append(location)
                     return .none
-
                 } else {
                     
                     if let filteredLocation = kalmanFilterManager.filter(location: location) {

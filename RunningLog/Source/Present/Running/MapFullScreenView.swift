@@ -93,14 +93,22 @@ struct MapFullScreenView: View {
             }
         }
         .background(Color(.systemBackground).edgesIgnoringSafeArea(.all)) // 탭바 영역 포함 전체 배경색 지정
-        .onAppear {
+        .onChange(of: currentLocation, { oldValue, newValue in
             if let current = currentLocation {
                 region = MKCoordinateRegion(
                     center: current.coordinate,
                     span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002)
                 )
             }
-        }
+        })
+//        .onAppear {
+//            if let current = currentLocation {
+//                region = MKCoordinateRegion(
+//                    center: current.coordinate,
+//                    span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002)
+//                )
+//            }
+//        }
     }
 } 
 

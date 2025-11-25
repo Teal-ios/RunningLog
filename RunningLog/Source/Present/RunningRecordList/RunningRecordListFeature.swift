@@ -60,16 +60,19 @@ struct RunningRecordListFeature {
             case let .recordsResponse(.success(records)):
                 
                 // 1. 최소 기준 설정
-                let minDuration: Double = 60.0  // 1분 (60초)
+//                let minDuration: Double = 60.0  // 1분 (60초)
                 let minDistance: Double = 100.0 // 100 미터
+                
+//                let minDuration: Double = 00.0  // 1분 (60초)
+//                let minDistance: Double = -100.0   100 미터
                 
                 // 2. 삭제 대상 및 유지 대상 분리
                 let recordsToDelete = records.filter { record in
-                    record.elapsedTime <= minDuration || record.distance <= minDistance
+                    record.distance <= minDistance
                 }
                 
                 let filteredRecords = records.filter { record in
-                    record.elapsedTime > minDuration && record.distance > minDistance
+                    record.distance > minDistance
                 }
                 
                 state.records = filteredRecords
@@ -80,6 +83,7 @@ struct RunningRecordListFeature {
                     state.errorMessage = nil
                     return .none
                 } else {
+                    print("[기록탭]", recordsToDelete)
                     print("[기록탭] 필터링 기준 미달 \(recordsToDelete.count)개 발견, ACID 트랜잭션 삭제 시작")
                     
                     state.isLoading = true // 삭제 작업이 완료될 때까지 로딩 유지
